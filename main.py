@@ -46,6 +46,25 @@ def format_data_to_tuple(data):
     return quotes
 
 
+def get_close_gt_highest(data, highest):
+    values = []
+    for index, value in enumerate(data['<CLOSE>']):
+        if index > 0:
+            if value > highest[index-1]:
+                values.append(index)
+
+    return values
+
+def get_close_gt_lowest(data, lowest):
+    values = []
+    for index, value in enumerate(data['<CLOSE>']):
+        if index > 0:
+            if value < lowest[index-1]:
+                values.append(index)
+
+    return values
+
+
 def get_values_in_range(data, n, function):
     values = []
     for i in range(len(data)):
@@ -68,18 +87,34 @@ def build_candles(data, data_candles):
     lows = data['<LOW>']
     indexes = [data_candles[i][0] for i in range(len(data_candles))]
 
-    
-
     max_values = get_values_in_range(highs, N, max)
     min_values = get_values_in_range(lows, N, min)
 
-    data_min = pd.DataFrame(min_values, index=indexes, columns=["min_values"]) #_2
-    data_max = pd.DataFrame(max_values, index=indexes, columns=["max_values"]) #_2
+    data_min = pd.DataFrame(min_values, index=indexes, columns=["min_values"])
+    data_max = pd.DataFrame(max_values, index=indexes, columns=["max_values"])
+
     data_min = data_min.astype(float)
     data_max = data_max.astype(float)
 
     data_min["min_values"].plot(ax=ax)
     data_max["max_values"].plot(ax=ax)
+
+    values_highest = get_close_gt_highest(data, max_values)
+    values_lowest = get_close_gt_lowest(data, min_values)
+
+    for index in values_highest:
+        line = [max_values[index-1], data['<CLOSE>'][index]]
+        line_indexes = [indexes[index-1], indexes[index]]
+        line_data = pd.DataFrame(line, index=line_indexes, columns=[str(index)])
+        line_data = line_data.astype(float)
+        line_data[str(index)].plot(ax=ax)
+
+    for index in values_lowest:
+        line = [min_values[index-1], data['<CLOSE>'][index]]
+        line_indexes = [indexes[index-1], indexes[index]]
+        line_data = pd.DataFrame(line, index=line_indexes, columns=[str(index)])
+        line_data = line_data.astype(float)
+        line_data[str(index)].plot(ax=ax)
 
 
     plt.xticks(rotation = 30)
@@ -90,10 +125,11 @@ def build_candles(data, data_candles):
     plt.show()
 
 
-data = load_csv()
-formated_data = format_data_to_tuple(data)
-build_candles(data, formated_data)
+def main():
+    data = load_csv()
+    formated_data = format_data_to_tuple(data)
+    build_candles(data, formated_data)
 
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
