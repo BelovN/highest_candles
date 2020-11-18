@@ -1,4 +1,5 @@
 import time
+import keyboard
 import matplotlib.dates as dates
 import matplotlib.pyplot as plt
 from matplotlib import ticker
@@ -32,6 +33,8 @@ class SettingsMixinView(BaseSettingsMixin):
     '''
 
     def _setup_axis(self):
+        ''' Настройка отображения осей
+        '''
         self.ax.xaxis.set_major_formatter(dates.DateFormatter('%d.%m.%Y %H:%M'))
         self.ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
 
@@ -46,6 +49,8 @@ class SettingsMixinView(BaseSettingsMixin):
 
 
     def _set_default_settings(self):
+        ''' Стандартные настройки
+        '''
         fig, ax = plt.subplots()
 
         self.fig = fig
@@ -55,6 +60,8 @@ class SettingsMixinView(BaseSettingsMixin):
 
 
     def __on_close(self, event):
+        ''' Для завершения цикла при закрытии окна
+        '''
         event.canvas.figure.axes[0].has_been_closed = True
 
 
@@ -70,58 +77,33 @@ class BaseViewCandles(SettingsMixinView):
         self.set_up(**kwargs) # Настройки
 
 
-    def show(self, width=0.0005, alpha=0.8):
+    def _show_algorithm(self, *args, **kwargs):
+        ''' Функция для отображения алгоритмов
+        '''
+        return
+
+
+    def show(self, width=0.0007, alpha=0.8, *args, **kwargs):
+        ''' Базовая функция для отображения функции на графике
+        '''
         plt.ion()
         plt.show(block=False)
-        for i in range(1000):
+        for i in range(len(self.data)):
 
             if self.ax.has_been_closed:
                 break
 
-            candles = candlestick_ohlc(self.ax, self.data[i+self.N:i+self.N*2], width=width,
+            candles_data = self.data[i:i+self.N*3]
+            candles = candlestick_ohlc(self.ax, candles_data, width=width,
                                        colorup='g', colordown='r', alpha=alpha)
-            # self.ax.xaxis.set_major_formatter(dates.DateFormatter('%d.%m.%Y %H:%M'))
-            # self.ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
-            #
-            # plt.grid()
-            # plt.xticks(rotation=30)
-            # plt.xlabel('Дата')
-            # plt.ylabel('Цена')
-            # plt.autoscale(enable=False, axis='both')
+
+            x_lim = self.ax.get_xlim()
+            self.ax.set_xlim([candles_data[0][0], candles_data[self.N-1][0]])
 
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
-            self.ax.clear()
+            self._show_algorithm(args, kwargs)
 
-
-
-from services import get_tuppled_data
-
-data = get_tuppled_data()
-view = BaseViewCandles(data, N=50)
-view.show()
-
-
-
-#
-# x = np.linspace(0, 6*np.pi, 100)
-# y = np.sin(x)
-#
-# x = [1,2,3,4,5,6]
-# y = x
-#
-#
-# # You probably won't need this if you're embedding things in a tkinter plot...
-# plt.ion()
-#
-# fig = plt.figure()
-# ax = fig.add_subplot(111)
-# line1, = ax.plot(x, y, 'r-') # Returns a tuple of line objects, thus the comma
-#
-# for phase in range(1000):
-#     y = [i+1 for i in y]
-#     line1.set_ydata(y)
-#     time.sleep(0.4)
-#     fig.canvas.draw()
-#     fig.canvas.flush_events()
+            self.ax.lines = []
+            self.ax.patches = []

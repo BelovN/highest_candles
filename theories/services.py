@@ -62,6 +62,3 @@ def get_tuppled_data():
     data_tuples = format_data_to_tuple(data)
 
     return data_tuples
-
-# data = load_csv()
-# print(data)

@@ -1,16 +1,8 @@
-import matplotlib.pyplot as plt
-
-def on_close(event):
-    event.canvas.figure.axes[0].has_been_closed = True
-    print('Closed Figure')
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.has_been_closed = False
-ax.plot(range(10))
-
-fig.canvas.mpl_connect('close_event', on_close)
-
-plt.show()
-
-print(ax.has_been_closed)
+import keyboard  # using module keyboard
+while True:  # making a loop
+    try:  # used try so that if user pressed other than the given key error will not be shown
+        if keyboard.is_pressed(' '):  # if key 'q' is pressed
+            print('You Pressed A Key!')
+            break  # finishing the loop
+    except:
+        break  # if user pressed a key other than the given key the loop will break
