@@ -27,19 +27,20 @@ def standartize_data(data):
     return data
 
 
-def load_csv(path=GAZP_PATH, sep=';',  encoding='utf-8', count=2000):
+def load_csv(path=GAZP_PATH, sep=';',  encoding='utf-8', count=10000):
     ''' Загрузка данных из csv файла
     '''
+
     data = pd.read_csv(path, sep=sep, encoding=encoding)
     data = data.loc[:count]
 
     return data
 
 
-def get_standartized_data():
+def get_standartized_data(count=10000):
     ''' Считывание и обработка данных
     '''
-    data = load_csv()
+    data = load_csv(count=count)
     standartized_data = standartize_data(data)
     return standartized_data
 

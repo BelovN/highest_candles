@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 GAZP_PATH = os.path.join(DATA_DIR, 'GAZP_200101_201112.csv')
 
-N = 10
+N = 20
 
 
 def convert_datetime(data):
@@ -32,7 +32,7 @@ def convert_datetime(data):
     return indexes
 
 
-def load_csv(path=GAZP_PATH, count=2000):
+def load_csv(path=GAZP_PATH, count=1000):
     gazp_data = pd.read_csv(GAZP_PATH, sep=';', encoding='utf-8')
 
     gazp_data = gazp_data.loc[:count]
