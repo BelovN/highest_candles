@@ -32,7 +32,7 @@ def convert_datetime(data):
     return indexes
 
 
-def load_csv(path=GAZP_PATH, count=1000):
+def load_csv(path=GAZP_PATH, count=100):
     gazp_data = pd.read_csv(GAZP_PATH, sep=';', encoding='utf-8')
 
     gazp_data = gazp_data.loc[:count]

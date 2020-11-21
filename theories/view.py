@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 from mplfinance.original_flavor import candlestick_ohlc
 
+mpl.use('Qt5Agg')
 
 
 class BaseSettingsMixin:
@@ -103,7 +104,7 @@ class BaseViewCandles(SettingsMixinView):
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
-            self._show_algorithm(args, kwargs)
+            self._show_algorithm(*args, **kwargs)
 
             self.ax.lines = []
             self.ax.patches = []
