@@ -7,12 +7,10 @@ from services import get_standartized_data
 from settings import OUTPUT_FILE_DIR
 
 
-class TheoryBase:
-    ''' Базовый класс Теория для наследования c логикой покупки и продажи
-        а также возможностью получения статистики
+class TheoryStatistic:
+    ''' Класс для сбора статистики
     '''
-    def __init__(self, _data):
-        self.data = _data
+    def __init__(self, *args, **kwargs):
         self.statistic = {
             'ind_in': [],
             'ind_out': [],
@@ -36,19 +34,9 @@ class TheoryBase:
             'avr_potencial': 0,
         }
 
-    def buy(self, ind):
-        self.ready_to_buy = False
-        self.statistic['ind_in'].append(ind)
-        self.statistic['point_in'].append(self.data['<CLOSE>'][ind])
-        self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
-
-    def sell(self, ind):
-        self.ready_to_buy = True
-        self.statistic['ind_out'].append(ind)
-        self.statistic['point_out'].append(self.data['<CLOSE>'][ind])
-        self.statistic['time_out'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
-
     def _get_statistic(self):
+        ''' Подсчитывает дельта статистику
+        '''
         for i in range(len(self.statistic['ind_out'])):
             ind_in = self.statistic['ind_in'][i]
             ind_out = self.statistic['ind_out'][i]
@@ -66,6 +54,8 @@ class TheoryBase:
             self.statistic[key] = self.statistic[key][:min_len]
 
     def _get_meta_statistic(self):
+        ''' Подсчитывает средние и ожидаемые значения
+        '''
         for i in range(len(self.statistic['ind_out'])):
             if self.statistic['delta_price'][i] < 0:
                 self.meta_statistic['count_lesion'] += 1
@@ -91,8 +81,14 @@ class TheoryBase:
 
         self.meta_statistic['count_all'] = len(self.statistic['ind_out'])
 
-    def print_statistic(self, view_all_rows=False):
+    def check(self, *args, **kwargs):
+        self._get_statistic()
+        self._get_meta_statistic()
 
+    def print_statistic(self, view_all_rows=False):
+        ''' Вывод в консоль статистики и мета статистики
+            view_all_rows - Выводить все строки
+        '''
         if view_all_rows:
             pd.set_option("display.max_rows", None)
         else:
@@ -105,6 +101,8 @@ class TheoryBase:
             print(key, ' = ', value)
 
     def write_meta_statistic(self, path):
+        ''' Пишет статистику в файл
+        '''
         with open(path, 'a', encoding='utf-8') as file:
 
             string = '{:^4} {:^4} {:^12} {:^10} {:^12} {:^10} {:^9} {:^5} {:^7} {:^13}'
@@ -114,6 +112,27 @@ class TheoryBase:
                                    str(self.meta_statistic['avr_all'])[:5], str(self.meta_statistic['avr_potencial'])[:5])
 
             file.write(string  + '\n')
+
+
+class TheoryBase(TheoryStatistic):
+    ''' Базовый класс Теория для наследования c логикой покупки и продажи
+        а также возможностью получения статистики
+    '''
+    def __init__(self, _data, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.data = _data
+
+    def buy(self, ind):
+        self.ready_to_buy = False
+        self.statistic['ind_in'].append(ind)
+        self.statistic['point_in'].append(self.data['<CLOSE>'][ind])
+        self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
+
+    def sell(self, ind):
+        self.ready_to_buy = True
+        self.statistic['ind_out'].append(ind)
+        self.statistic['point_out'].append(self.data['<CLOSE>'][ind])
+        self.statistic['time_out'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
 
 
 class TheoryQuickGrowth(TheoryBase):
@@ -158,7 +177,7 @@ class TheoryQuickGrowth(TheoryBase):
                 if self.data['<CLOSE>'][ind] < self.lowest[ind-1]:
                     self.lowest_indexes.append(ind)
 
-    def check(self):
+    def check(self, *args, **kwargs):
         self.ready_to_buy = True
         for ind in range(1, len(self.data['<CLOSE>'])):
 
@@ -171,27 +190,9 @@ class TheoryQuickGrowth(TheoryBase):
             elif not self.ready_to_buy and ind in self.lowest_indexes:
                 self.sell(ind)
 
-        self._get_statistic()
-        self._get_meta_statistic()
+        super().check(*args, **kwargs)
 
 
-
-# data = get_standartized_data(count=count)
-
-# theory = TheoryQuickGrowth(data, Nmin=30, Nmax=60)
-# theory.check()
-# theory.write_meta_statistic(OUTPUT_FILE_DIR)
-#
-# import pdb; pdb.set_trace()
-theories = []
-for i in range(10, 65, 5):
-    for j in range(10, 65, 5):
-        data = get_standartized_data()
-
-        theory = TheoryQuickGrowth(data, Nmin=i, Nmax=j)
-        theory.check()
-        theory.write_meta_statistic(OUTPUT_FILE_DIR)
-        theories.append(theory)
 
 
 # for i in range(5, 65, 5):

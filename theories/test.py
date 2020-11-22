@@ -21,3 +21,13 @@ ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
 
 plt.show()
+
+
+
+#
+# with open(OUTPUT_FILE_DIR, 'r', encoding='utf-8') as output:
+#     with open(INPUT_FILE_DIR, 'w', encoding='utf-8') as input:
+#         for line in output:
+#             while line.find('  ') != -1:
+#                 line = line.replace('  ', ' ')
+#             input.write(line)
