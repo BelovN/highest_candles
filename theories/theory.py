@@ -82,6 +82,8 @@ class TheoryStatistic:
         self.meta_statistic['count_all'] = len(self.statistic['ind_out'])
 
     def check(self, *args, **kwargs):
+        ''' Считает всю статистику
+        '''
         self._get_statistic()
         self._get_meta_statistic()
 
@@ -123,12 +125,16 @@ class TheoryBase(TheoryStatistic):
         self.data = _data
 
     def buy(self, ind):
+        ''' Операция покупки
+        '''
         self.ready_to_buy = False
         self.statistic['ind_in'].append(ind)
         self.statistic['point_in'].append(self.data['<CLOSE>'][ind])
         self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
 
     def sell(self, ind):
+        ''' Операция продажи
+        '''
         self.ready_to_buy = True
         self.statistic['ind_out'].append(ind)
         self.statistic['point_out'].append(self.data['<CLOSE>'][ind])
@@ -151,6 +157,8 @@ class TheoryQuickGrowth(TheoryBase):
         self.lowest_indexes = []
 
     def _get_min_values(self, ind):
+        ''' Получение минимальных значений в промежутке
+        '''
         sind = ind-self.Nmin
         sind = 0 if sind < 0 else sind
         find = ind
@@ -158,6 +166,8 @@ class TheoryQuickGrowth(TheoryBase):
         self.lowest.append(min_value)
 
     def _get_max_values(self, ind):
+        ''' Получение максимальных значений в промежутке
+        '''
         sind = ind-self.Nmax
         sind = 0 if sind < 0 else sind
         find = ind
@@ -165,10 +175,15 @@ class TheoryQuickGrowth(TheoryBase):
         self.highest.append(max_value)
 
     def _get_extremum_values(self, ind):
+        ''' Получение минимального и максимального значения в промежутке
+            относительно индекса
+        '''
         self._get_min_values(ind)
         self._get_max_values(ind)
 
     def _get_highest_lowest_indexes(self, ind):
+        ''' Получение индекса покупки и продажи
+        '''
         if ind > 0:
             if self.ready_to_buy:
                 if self.data['<CLOSE>'][ind] > self.highest[ind-1]:
@@ -178,6 +193,8 @@ class TheoryQuickGrowth(TheoryBase):
                     self.lowest_indexes.append(ind)
 
     def check(self, *args, **kwargs):
+        ''' Проверка теории
+        '''
         self.ready_to_buy = True
         for ind in range(1, len(self.data['<CLOSE>'])):
 
@@ -191,29 +208,3 @@ class TheoryQuickGrowth(TheoryBase):
                 self.sell(ind)
 
         super().check(*args, **kwargs)
-
-
-
-
-# for i in range(5, 65, 5):
-#     theory = TheoryQuickGrowth(data, N=i)
-#     theory.check()
-#     theory.write_meta_statistic(OUTPUT_FILE_DIR)
-#     theories.append(theory)
-# theory.print_statistic()
-#
-#
-# print(count)
-#
-# f = open(OUTPUT_FILE_DIR, 'w')
-# f.close()
-#
-#
-# theories = []
-# for i in range(10, 65, 5):
-#     theory = TheoryQuickGrowth(data, N=i)
-#     theory.check()
-#     theory.write_meta_statistic(OUTPUT_FILE_DIR)
-#     theories.append(theory)
-#
-# print('Ready!')

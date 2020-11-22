@@ -1,6 +1,7 @@
-from datetime import datetime
 import matplotlib.dates as dates
 import pandas as pd
+
+from datetime import datetime
 
 from settings import GAZP_PATH
 
@@ -30,7 +31,6 @@ def standartize_data(data):
 def load_csv(path=GAZP_PATH, sep=';',  encoding='utf-8', count=10000):
     ''' Загрузка данных из csv файла
     '''
-
     data = pd.read_csv(path, sep=sep, encoding=encoding)
     data = data.loc[:count]
 

@@ -7,31 +7,39 @@ import pandas as pd
 from matplotlib import cm
 
 from services import get_standartized_data
-from settings import OUTPUT_FILE_DIR
 from theory import TheoryQuickGrowth
 
 mpl.use('Qt5Agg')
 
 
-INPUT_FILE_DIR = OUTPUT_FILE_DIR.replace('output.txt', 'output_h.txt')
-
-
 class TheoryQuickGrowthAnalysis:
-    def __init__(self):
+    ''' Класс для проверки теории c несколькими различными параметрами
+    '''
+    def __init__(self, min_ind, max_ind, step, data):
+        self.min_ind = min_ind
+        self.max_ind = max_ind
+        self.step = step
+        self.data = data
         self.full_meta_statistic = {}
+        self.theories = []
 
-    def count_all_theories(self, min_ind, max_ind, step, data):
-        theories = []
+        # Создание теорий в диапазоне (min_ind, max_ind)
         for i in range(min_ind, max_ind + step, step):
             for j in range(min_ind, max_ind + step, step):
-                theory = TheoryQuickGrowth(data, Nmin=i, Nmax=j)
-                theory.check()
+                theory = TheoryQuickGrowth(self.data, Nmin=i, Nmax=j)
                 theories.append(theory)
 
-        self.theories = theories
+
+    def _count_all_theories(self):
+        ''' Подсчет статистики всех теорий
+        '''
+        for theory in theories:
+            theory.check()
 
 
     def _get_full_meta_statistic(self):
+        ''' Объединение все статистик в одну
+        '''
         self.full_meta_statistic['Nmin'] = []
         self.full_meta_statistic['Nmax'] = []
 
@@ -45,17 +53,11 @@ class TheoryQuickGrowthAnalysis:
             self.full_meta_statistic['Nmin'].append(theory.Nmin)
             self.full_meta_statistic['Nmax'].append(theory.Nmax)
 
-        # print(self.full_meta_statistic)
-
-
-    def find_correlation(self, Nmin, Nmax, step):
-        self._get_full_meta_statistic()
-
 
     def _get_coordinates(self, data_list=[]):
+        ''' Разбиение данных для отображения в 3d графике
+        '''
         split_value = int(math.sqrt(len(self.theories)))
-        # split_value = 4
-        # data_list = self.full_meta_statistic['Nmin']
         coordinates = []
         for i in range(split_value):
             data_slice = data_list[i*split_value:(i+1)*split_value]
@@ -67,6 +69,7 @@ class TheoryQuickGrowthAnalysis:
 
     def view_graph_statistic(self, stat_arg='total'):
         ''' Выводит графики статистики
+            stat_arg - Z координата графики
         '''
 
         fig = plt.figure()
@@ -88,14 +91,22 @@ class TheoryQuickGrowthAnalysis:
         plt.show()
 
 
-data = get_standartized_data()
-analysis = TheoryQuickGrowthAnalysis()
-analysis.count_all_theories(5, 100, 5, data)
-analysis._get_full_meta_statistic()
+    def get_anilysis(self):
+        ''' Подсчитывает всю статистику и выводит в графике
+        '''
+        self._count_all_theories()
+        self._get_full_meta_statistic()
+        self.view_graph_statistic()
+        self.view_graph_statistic('avr_lesion')
+        self.view_graph_statistic('avr_profit')
+        self.view_graph_statistic('avr_potencial')
 
-analysis.view_graph_statistic()
-analysis.view_graph_statistic('avr_lesion')
-analysis.view_graph_statistic('avr_profit')
-analysis.view_graph_statistic('avr_potencial')
 
-# print(a)
+def main():
+    data = get_standartized_data()
+    analysis = TheoryQuickGrowthAnalysis()
+    analysis.get_anilysis()
+
+
+if __name__ == '__main__':
+    main()
