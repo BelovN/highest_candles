@@ -28,7 +28,7 @@ def standartize_data(data):
     return data
 
 
-def load_csv(path=GAZP_PATH, sep=';',  encoding='utf-8', count=10000):
+def load_csv(path=GAZP_PATH, sep=';',  encoding='utf-8', count=141000):
     ''' Загрузка данных из csv файла
     '''
     data = pd.read_csv(path, sep=sep, encoding=encoding)

@@ -27,13 +27,13 @@ class TheoryQuickGrowthAnalysis:
         for i in range(min_ind, max_ind + step, step):
             for j in range(min_ind, max_ind + step, step):
                 theory = TheoryQuickGrowth(self.data, Nmin=i, Nmax=j)
-                theories.append(theory)
+                self.theories.append(theory)
 
 
     def _count_all_theories(self):
         ''' Подсчет статистики всех теорий
         '''
-        for theory in theories:
+        for theory in self.theories:
             theory.check()
 
 
@@ -75,10 +75,11 @@ class TheoryQuickGrowthAnalysis:
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
-        data = pd.read_csv(INPUT_FILE_DIR, sep=' ', encoding='utf-8')
         X = self._get_coordinates(self.full_meta_statistic['Nmin'])
         Y = self._get_coordinates(self.full_meta_statistic['Nmax'])
         Z = self._get_coordinates(self.full_meta_statistic[stat_arg])
+
+
 
         surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
@@ -104,7 +105,7 @@ class TheoryQuickGrowthAnalysis:
 
 def main():
     data = get_standartized_data()
-    analysis = TheoryQuickGrowthAnalysis()
+    analysis = TheoryQuickGrowthAnalysis(min_ind=5, max_ind=60, step=5, data=data)
     analysis.get_anilysis()
 
 
