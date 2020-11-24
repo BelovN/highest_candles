@@ -1,10 +1,12 @@
+import math
 import datetime
 import matplotlib.dates as dates
+import matplotlib.pyplot as plt
 import os
 import pandas as pd
 
 from services import get_standartized_data
-from settings import OUTPUT_FILE_DIR
+from settings import OUTPUT_FILE_DIR, GAZP_PATH_5MIN, GAZP_PATH_HOUR, GAZP_PATH_MIN
 
 
 class TheoryStatistic:
@@ -22,6 +24,7 @@ class TheoryStatistic:
             'time_in': [],
             'time_out': [],
             'delta_time': [],
+            'delta_max_min': [],
         }
         self.meta_statistic = {
             'count_lesion': 0,
@@ -32,6 +35,7 @@ class TheoryStatistic:
             'total': 0,
             'avr_all': 0,
             'avr_potencial': 0,
+            'avr_max_min': 0,
         }
 
     def _get_statistic(self):
@@ -48,6 +52,8 @@ class TheoryStatistic:
 
             self.statistic['potencial'].append(max(self.data['<CLOSE>'][ind_in:ind_out]))
             self.statistic['delta_potencial'].append(self.statistic['potencial'][i] - self.statistic['point_in'][i])
+            self.statistic['delta_max_min'].append(self.highest[i] - self.lowest[i])
+
 
         min_len = len(self.statistic['ind_out'])
         for key, value in self.statistic.items():
@@ -57,6 +63,7 @@ class TheoryStatistic:
         ''' Подсчитывает средние и ожидаемые значения
         '''
         for i in range(len(self.statistic['ind_out'])):
+            self.meta_statistic['avr_max_min'] += self.statistic['delta_max_min'][i]
             if self.statistic['delta_price'][i] < 0:
                 self.meta_statistic['count_lesion'] += 1
                 self.meta_statistic['avr_lesion'] += self.statistic['delta_price'][i]
@@ -66,6 +73,9 @@ class TheoryStatistic:
 
             self.meta_statistic['avr_potencial'] += self.statistic['delta_potencial'][i]
             self.meta_statistic['total'] += self.statistic['delta_price'][i]
+
+        if self.meta_statistic['avr_max_min'] > 0:
+            self.meta_statistic['avr_max_min'] = self.meta_statistic['avr_max_min'] / len(self.statistic['delta_max_min'])
 
         if self.meta_statistic['count_lesion'] > 0:
             self.meta_statistic['avr_lesion'] = self.meta_statistic['avr_lesion'] / self.meta_statistic['count_lesion']
@@ -114,6 +124,19 @@ class TheoryStatistic:
                                    str(self.meta_statistic['avr_all'])[:5], str(self.meta_statistic['avr_potencial'])[:5])
 
             file.write(string  + '\n')
+
+    def check_potential_correlation(self):
+        r = 0
+        numerator = 0
+        denominator = 0
+        for i in range(len(self.statistic['ind_out'])):
+            numerator += (self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial']) * \
+                                (self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'])
+            denominator += math.sqrt(math.pow(self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial'], 2) * \
+                                math.pow(self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'] , 2))
+
+        r = numerator / denominator
+        print('correlation = ', r)
 
 
 class TheoryBase(TheoryStatistic):
@@ -208,3 +231,27 @@ class TheoryQuickGrowth(TheoryBase):
                 self.sell(ind)
 
         super().check(*args, **kwargs)
+
+
+def main():
+
+    LDATA = [GAZP_PATH_MIN, GAZP_PATH_5MIN, GAZP_PATH_HOUR]
+    # for data_path in LDATA:
+    data = get_standartized_data(path=GAZP_PATH_HOUR)
+    theory = TheoryQuickGrowth(data, Nmin=20, Nmax=10)
+    theory.check()
+    theory.print_statistic()
+    theory.check_potential_correlation()
+
+    # plt.plot(theory.statistic['delta_potencial'])
+    # plt.show()
+    #
+    # plt.plot(theory.statistic['delta_max_min'])
+    # plt.show()
+    #
+    # plt.plot(theory.statistic['delta_max_min'], theory.statistic['delta_potencial'])
+    # plt.show()
+
+
+if __name__ == '__main__':
+    main()

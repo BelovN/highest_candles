@@ -3,7 +3,7 @@ import pandas as pd
 
 from datetime import datetime
 
-from settings import GAZP_PATH
+from settings import GAZP_PATH_5MIN, GAZP_PATH_HOUR, GAZP_PATH_MIN
 
 
 def convert_datetime(data):
@@ -11,7 +11,10 @@ def convert_datetime(data):
     '''
     indexes = []
     for i, date in enumerate(data['<DATE>']):
-        full_date = str(data['<DATE>'][i]) + str(data['<TIME>'][i])
+        if str(data['<TIME>'][i]) == '0':
+            full_date = str(data['<DATE>'][i]) + '000000'
+        else:
+            full_date = str(data['<DATE>'][i]) + str(data['<TIME>'][i])
         converted_date = datetime.strptime(full_date, '%Y%m%d%H%M%S')
         indexes.append(converted_date)
 
@@ -23,24 +26,27 @@ def standartize_data(data):
     ''' Удаление лилних колонок и добавление единой колонки DATE (дата и время)
     '''
     DATE = convert_datetime(data)
+    for row in data:
+
     data = data.drop(columns=['<DATE>', '<TIME>', '<PER>', '<VOL>', '<TICKER>'])
     data = data.assign(DATE=DATE)
     return data
 
 
-def load_csv(path=GAZP_PATH, sep=';',  encoding='utf-8', count=141000):
+def load_csv(path=GAZP_PATH_MIN, sep=';',  encoding='utf-8', count=None):
     ''' Загрузка данных из csv файла
     '''
     data = pd.read_csv(path, sep=sep, encoding=encoding)
-    data = data.loc[:count]
+    if count is not None:
+        data = data.loc[:count]
 
     return data
 
 
-def get_standartized_data(count=10000):
+def get_standartized_data(path=GAZP_PATH_MIN, count=None):
     ''' Считывание и обработка данных
     '''
-    data = load_csv(count=count)
+    data = load_csv(path=path, count=count)
     standartized_data = standartize_data(data)
     return standartized_data
 
