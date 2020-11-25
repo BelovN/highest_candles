@@ -26,9 +26,8 @@ def standartize_data(data):
     ''' Удаление лилних колонок и добавление единой колонки DATE (дата и время)
     '''
     DATE = convert_datetime(data)
-    for row in data:
-
-    data = data.drop(columns=['<DATE>', '<TIME>', '<PER>', '<VOL>', '<TICKER>'])
+    # data = data.drop(columns=['<DATE>', '<TIME>', '<PER>', '<VOL>', '<TICKER>'])
+    data = data.drop(columns=['<DATE>', '<PER>', '<VOL>', '<TICKER>'])
     data = data.assign(DATE=DATE)
     return data
 

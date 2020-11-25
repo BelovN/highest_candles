@@ -54,7 +54,8 @@ class TheoryStatistic:
             self.statistic['delta_potencial'].append(self.statistic['potencial'][i] - self.statistic['point_in'][i])
             self.statistic['delta_max_min'].append(self.highest[i] - self.lowest[i])
 
-
+        self.statistic['delta_max'] = self.highest
+        self.statistic['delta_min'] = self.lowest
         min_len = len(self.statistic['ind_out'])
         for key, value in self.statistic.items():
             self.statistic[key] = self.statistic[key][:min_len]
@@ -125,18 +126,18 @@ class TheoryStatistic:
 
             file.write(string  + '\n')
 
-    def check_potential_correlation(self):
-        r = 0
-        numerator = 0
-        denominator = 0
-        for i in range(len(self.statistic['ind_out'])):
-            numerator += (self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial']) * \
-                                (self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'])
-            denominator += math.sqrt(math.pow(self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial'], 2) * \
-                                math.pow(self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'] , 2))
-
-        r = numerator / denominator
-        print('correlation = ', r)
+    # def check_potential_correlation(self):
+    #     r = 0
+    #     numerator = 0
+    #     denominator = 0
+    #     for i in range(len(self.statistic['ind_out'])):
+    #         numerator += (self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial']) * \
+    #                             (self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'])
+    #         denominator += math.sqrt(math.pow(self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial'], 2) * \
+    #                             math.pow(self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'] , 2))
+    #
+    #     r = numerator / denominator
+    #     print('correlation = ', r)
 
 
 class TheoryBase(TheoryStatistic):
@@ -150,16 +151,19 @@ class TheoryBase(TheoryStatistic):
     def buy(self, ind):
         ''' Операция покупки
         '''
+
+        # if self.data['<LOW>'][ind+1] <= self.highest[ind-1]:
         self.ready_to_buy = False
-        self.statistic['ind_in'].append(ind)
-        self.statistic['point_in'].append(self.data['<CLOSE>'][ind])
+        self.statistic['ind_in'].append(ind+1)
+        self.statistic['point_in'].append(self.highest[ind-1])
         self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
 
     def sell(self, ind):
         ''' Операция продажи
         '''
+        # if self.data['<HIGH>'][ind+1] >= self.data['<CLOSE>'][ind]:
         self.ready_to_buy = True
-        self.statistic['ind_out'].append(ind)
+        self.statistic['ind_out'].append(ind+1)
         self.statistic['point_out'].append(self.data['<CLOSE>'][ind])
         self.statistic['time_out'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
 
@@ -209,10 +213,10 @@ class TheoryQuickGrowth(TheoryBase):
         '''
         if ind > 0:
             if self.ready_to_buy:
-                if self.data['<CLOSE>'][ind] > self.highest[ind-1]:
+                if self.data['<CLOSE>'][ind] >= self.highest[ind-1]:
                     self.highest_indexes.append(ind)
             else:
-                if self.data['<CLOSE>'][ind] < self.lowest[ind-1]:
+                if self.data['<CLOSE>'][ind] <= self.lowest[ind-1]:
                     self.lowest_indexes.append(ind)
 
     def check(self, *args, **kwargs):
@@ -233,15 +237,31 @@ class TheoryQuickGrowth(TheoryBase):
         super().check(*args, **kwargs)
 
 
+def remove_evening_session(data):
+    indexes = []
+    for index, row in data.iterrows():
+
+        if row['<TIME>'] >= 190000 or row['<TIME>'] == 0:
+            indexes.append(index)
+
+    data = data.drop(data.index[indexes])
+    data.index = range(len(data))
+    return data
+
+
 def main():
 
     LDATA = [GAZP_PATH_MIN, GAZP_PATH_5MIN, GAZP_PATH_HOUR]
-    # for data_path in LDATA:
     data = get_standartized_data(path=GAZP_PATH_HOUR)
-    theory = TheoryQuickGrowth(data, Nmin=20, Nmax=10)
+    pd.set_option("display.max_rows", None)
+    # data = remove_evening_session(data)
+    # print(data.iloc[:100])
+    #
+    theory = TheoryQuickGrowth(data, Nmin=15, Nmax=30)
     theory.check()
+
     theory.print_statistic()
-    theory.check_potential_correlation()
+    # theory.check_potential_correlation()
 
     # plt.plot(theory.statistic['delta_potencial'])
     # plt.show()
