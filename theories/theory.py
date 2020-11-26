@@ -126,19 +126,6 @@ class TheoryStatistic:
 
             file.write(string  + '\n')
 
-    # def check_potential_correlation(self):
-    #     r = 0
-    #     numerator = 0
-    #     denominator = 0
-    #     for i in range(len(self.statistic['ind_out'])):
-    #         numerator += (self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial']) * \
-    #                             (self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'])
-    #         denominator += math.sqrt(math.pow(self.statistic['delta_potencial'][i]-self.meta_statistic['avr_potencial'], 2) * \
-    #                             math.pow(self.statistic['delta_max_min'][i]-self.meta_statistic['avr_max_min'] , 2))
-    #
-    #     r = numerator / denominator
-    #     print('correlation = ', r)
-
 
 class TheoryBase(TheoryStatistic):
     ''' Базовый класс Теория для наследования c логикой покупки и продажи
@@ -151,17 +138,24 @@ class TheoryBase(TheoryStatistic):
     def buy(self, ind):
         ''' Операция покупки
         '''
+        if self.count_m == 0:
+            self.count_m = self.m
+            self.fixed_price = self.highest[ind-1]
 
-        # if self.data['<LOW>'][ind+1] <= self.highest[ind-1]:
-        self.ready_to_buy = False
-        self.statistic['ind_in'].append(ind+1)
-        self.statistic['point_in'].append(self.highest[ind-1])
-        self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
+        if self.data['<HIGH>'][ind+1] >= self.fixed_price and self.fixed_price >= self.data['<LOW>'][ind+1]:
+            self.ready_to_buy = False
+            self.statistic['ind_in'].append(ind+1)
+            self.statistic['point_in'].append(self.fixed_price)
+            self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
+            self.count_m = 0
+            self.fixed_price = 0
+        else:
+            self.count_m -= 1
+
 
     def sell(self, ind):
         ''' Операция продажи
         '''
-        # if self.data['<HIGH>'][ind+1] >= self.data['<CLOSE>'][ind]:
         self.ready_to_buy = True
         self.statistic['ind_out'].append(ind+1)
         self.statistic['point_out'].append(self.data['<CLOSE>'][ind])
@@ -172,7 +166,7 @@ class TheoryQuickGrowth(TheoryBase):
     ''' Проверка теории покупки при резком скачке и продаже при резком падении
     '''
 
-    def __init__(self, *args, Nmin=10, Nmax=10, **kwargs):
+    def __init__(self, *args, Nmin=10, Nmax=10, m=5, **kwargs):
         super().__init__(*args, **kwargs)
         self.Nmin = Nmin
         self.Nmax = Nmax
@@ -182,6 +176,10 @@ class TheoryQuickGrowth(TheoryBase):
 
         self.highest_indexes = []
         self.lowest_indexes = []
+
+        self.fixed_price = 0
+        self.m = m
+        self.count_m = 0
 
     def _get_min_values(self, ind):
         ''' Получение минимальных значений в промежутке
@@ -228,7 +226,7 @@ class TheoryQuickGrowth(TheoryBase):
             self._get_extremum_values(ind)
             self._get_highest_lowest_indexes(ind)
 
-            if self.ready_to_buy and ind in self.highest_indexes:
+            if self.ready_to_buy and ind in self.highest_indexes or self.count_m > 0:
                 self.buy(ind)
 
             elif not self.ready_to_buy and ind in self.lowest_indexes:
@@ -252,25 +250,14 @@ def remove_evening_session(data):
 def main():
 
     LDATA = [GAZP_PATH_MIN, GAZP_PATH_5MIN, GAZP_PATH_HOUR]
-    data = get_standartized_data(path=GAZP_PATH_HOUR)
+    data = get_standartized_data(path=GAZP_PATH_5MIN)
     pd.set_option("display.max_rows", None)
-    # data = remove_evening_session(data)
-    # print(data.iloc[:100])
-    #
-    theory = TheoryQuickGrowth(data, Nmin=15, Nmax=30)
+
+
+    theory = TheoryQuickGrowth(data, Nmin=15, Nmax=30, m=3)
     theory.check()
 
     theory.print_statistic()
-    # theory.check_potential_correlation()
-
-    # plt.plot(theory.statistic['delta_potencial'])
-    # plt.show()
-    #
-    # plt.plot(theory.statistic['delta_max_min'])
-    # plt.show()
-    #
-    # plt.plot(theory.statistic['delta_max_min'], theory.statistic['delta_potencial'])
-    # plt.show()
 
 
 if __name__ == '__main__':
