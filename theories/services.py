@@ -3,7 +3,7 @@ import pandas as pd
 
 from datetime import datetime
 
-from settings import GAZP_PATH_5MIN, GAZP_PATH_HOUR, GAZP_PATH_MIN
+from settings import *
 
 
 def convert_datetime(data):
@@ -32,7 +32,7 @@ def standartize_data(data):
     return data
 
 
-def load_csv(path=GAZP_PATH_MIN, sep=';',  encoding='utf-8', count=None):
+def load_csv(path=GAZP_PATH_MIN_2020, sep=';',  encoding='utf-8', count=None):
     ''' Загрузка данных из csv файла
     '''
     data = pd.read_csv(path, sep=sep, encoding=encoding)
@@ -42,7 +42,7 @@ def load_csv(path=GAZP_PATH_MIN, sep=';',  encoding='utf-8', count=None):
     return data
 
 
-def get_standartized_data(path=GAZP_PATH_MIN, count=None):
+def get_standartized_data(path=GAZP_PATH_MIN_2020, count=None):
     ''' Считывание и обработка данных
     '''
     data = load_csv(path=path, count=count)
@@ -68,3 +68,17 @@ def get_tuppled_data():
     data_tuples = format_data_to_tuple(data)
 
     return data_tuples
+
+
+def remove_evening_session(data):
+    ''' Удаляет вечерние сессии
+    '''
+    indexes = []
+    for index, row in data.iterrows():
+
+        if row['<TIME>'] >= 190000 or row['<TIME>'] == 0:
+            indexes.append(index)
+
+    data = data.drop(data.index[indexes])
+    data.index = range(len(data))
+    return data

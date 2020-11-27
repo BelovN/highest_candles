@@ -7,7 +7,7 @@ import pandas as pd
 
 from matplotlib import cm
 
-from settings import OUTPUT_DIR, GAZP_PATH_MIN, GAZP_PATH_5MIN, GAZP_PATH_HOUR
+from settings import *
 from services import get_standartized_data
 from theory import TheoryQuickGrowth
 
@@ -114,9 +114,20 @@ class TheoryQuickGrowthAnalysis:
 
 
 def main():
-    LDATA = [GAZP_PATH_MIN, GAZP_PATH_5MIN, GAZP_PATH_HOUR]
-    data = get_standartized_data(path=GAZP_PATH_HOUR)
-    analysis = TheoryQuickGrowthAnalysis(min_ind=10, max_ind=60, step=5, data=data)
+    data = get_standartized_data(path=GAZP_PATH_HOUR_2018)
+    analysis = TheoryQuickGrowthAnalysis(min_ind=30, max_ind=50, step=5, data=data)
+    analysis.get_anilysis()
+    analysis.write_meta_statistic_to_csv()
+    analysis.view_all_graphics()
+
+    data = get_standartized_data(path=GAZP_PATH_HOUR_2019)
+    analysis = TheoryQuickGrowthAnalysis(min_ind=30, max_ind=50, step=5, data=data)
+    analysis.get_anilysis()
+    analysis.write_meta_statistic_to_csv()
+    analysis.view_all_graphics()
+
+    data = get_standartized_data(path=GAZP_PATH_HOUR_2020)
+    analysis = TheoryQuickGrowthAnalysis(min_ind=30, max_ind=50, step=5, data=data)
     analysis.get_anilysis()
     analysis.write_meta_statistic_to_csv()
     analysis.view_all_graphics()
