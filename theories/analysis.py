@@ -11,7 +11,7 @@ from settings import *
 from services import get_standartized_data
 from theory import TheoryQuickGrowth
 
-# mpl.use('Qt5Agg')
+mpl.use('Qt5Agg')
 
 
 class TheoryQuickGrowthAnalysis:
@@ -37,7 +37,7 @@ class TheoryQuickGrowthAnalysis:
         count = 1
         for theory in self.theories:
             print('progress: ', str((count/len(self.theories))*100)[:6] + '%', count, '/', len(self.theories))
-            theory.check()
+            theory.full_check()
             count += 1
 
     def _get_full_meta_statistic(self):
@@ -90,7 +90,6 @@ class TheoryQuickGrowthAnalysis:
         surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
 
-
         ax.set_xlabel('N MIN')
         ax.set_ylabel('N MAX')
         ax.set_zlabel(stat_arg.upper())
@@ -112,25 +111,16 @@ class TheoryQuickGrowthAnalysis:
         self._get_full_meta_statistic()
 
 
-
 def main():
-    data = get_standartized_data(path=GAZP_PATH_HOUR_2018)
-    analysis = TheoryQuickGrowthAnalysis(min_ind=30, max_ind=50, step=5, data=data)
+
+    # for path in paths:
+    data = get_standartized_data(path=RTS_3YEARS_HOUR)
+    analysis = TheoryQuickGrowthAnalysis(min_ind=20, max_ind=70, step=5, data=data)
+
     analysis.get_anilysis()
     analysis.write_meta_statistic_to_csv()
     analysis.view_all_graphics()
 
-    data = get_standartized_data(path=GAZP_PATH_HOUR_2019)
-    analysis = TheoryQuickGrowthAnalysis(min_ind=30, max_ind=50, step=5, data=data)
-    analysis.get_anilysis()
-    analysis.write_meta_statistic_to_csv()
-    analysis.view_all_graphics()
-
-    data = get_standartized_data(path=GAZP_PATH_HOUR_2020)
-    analysis = TheoryQuickGrowthAnalysis(min_ind=30, max_ind=50, step=5, data=data)
-    analysis.get_anilysis()
-    analysis.write_meta_statistic_to_csv()
-    analysis.view_all_graphics()
 
 
 if __name__ == '__main__':

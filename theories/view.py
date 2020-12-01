@@ -57,10 +57,8 @@ class SettingsMixinView(BaseSettingsMixin):
         ''' Стандартные настройки
         '''
         fig, ax = plt.subplots()
-
         self.fig = fig
         self.ax = ax
-
         self._setup_axis()
 
 
@@ -82,62 +80,79 @@ class BaseViewCandles(SettingsMixinView):
         self.N = N
         self.set_up(**kwargs) # Настройки
 
-
-    def date_ticker(self, x, pos):
-        return int(x)
-
+    def _date_ticker(self, x, pos):
+        return self.data['CONVDATE'][int(x)] # Для корректоного вывода даты
 
     def _show_algorithm(self, *args, **kwargs):
         ''' Функция для отображения алгоритмов
         '''
         return
 
+    def _color_deals(self, ind, i, lines, rectangles):
+        '''Окрашиваем сделки в черный цвет
+        '''
+        for deal in self.deals:
+            if deal >= ind and deal < i:
+                lines[deal-ind].set_color("black")
+                rectangles[deal-ind].set_color("black")
+            else:
+                self.deals.remove(deal)
 
-    def show(self, width=0.3, alpha=0.8, *args, **kwargs):
+    def _set_limits(self, candles_data, i, ind):
+        ''' Устанавливаем лимиты для осей
+        '''
+        min_lim = min(self.data['<LOW>'].iloc[ind:i])
+        max_lim = max(self.data['<HIGH>'].iloc[ind:i])
+
+        self.ax.set_xlim([candles_data[0][0], candles_data[i-ind-1][0]])
+        self.ax.set_ylim([min_lim-0.3, max_lim+0.3])
+
+    def count_SMA(self):
+        ''' Построение скользящей средней
+        '''
+        self.SMA = self.data['<CLOSE>'].rolling(20).mean()
+
+    def plot_EMA(self):
+        ''' Построение экспоненциальной скользящей средней
+        '''
+        self.EMA = self.data['<CLOSE>'].ewm(span=20, adjust=False).mean()
+
+    def show(self, width=0.3, alpha=0.8, deals=[], *args, **kwargs):
         ''' Базовая функция для отображения функции на графике
         '''
-
-        self.ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.date_ticker))
-        self.ax.set_xticklabels(self.data['CONVDATE'])
+        self.ax.xaxis.set_major_formatter(ticker.FuncFormatter(self._date_ticker))
+        self.deals = deals
 
         plt.ion()
-        plt.show(block=False)
-        SMA = self.data['<CLOSE>'].rolling(20).mean()
-        EMA = self.data['<CLOSE>'].ewm(span=20, adjust=False).mean()
+        plt.show(block=False) # Block = False для динамической отрисовки
 
-        for i in range(len(self.tuppled_data)):
-
-            if self.ax.has_been_closed:
+        for i in range(1, len(self.data['<CLOSE>'])):
+            if self.ax.has_been_closed: # Если окно было закрыто - выхордим из цикла
                 break
 
-            candles_data = self.tuppled_data[i:i+self.N]
+            ind = i - self.N # Избавляемся от отрицательных случаев (i < 0)
+            if ind < 0:
+                ind = 0
+
+            candles_data = self.tuppled_data[ind:i] # Берем последние N свеч
             lines, rectangles = candlestick_ohlc(self.ax, candles_data, width=width,
-                                       colorup='g', colordown='r', alpha=alpha)
-            # lines[1].set_color("orange")
-            # rectangles[1].set_color("orange")
+                                                 colorup='g', colordown='r', alpha=alpha)
 
+            self._color_deals(ind, i, lines, rectangles) # Окрашиваем сделки в черный цвет
 
-            self.ax.plot(range(i, i+self.N), SMA[i:i+self.N], color='blue', label='SMA5')
-            self.ax.plot(range(i, i+self.N), EMA[i:i+self.N], color='black', label='EMA5')
-
-            self.ax.legend(loc='best')
-
-            min_lim = min(self.data['<LOW>'].iloc[i:i+self.N])
-            max_lim = max(self.data['<HIGH>'].iloc[i:i+self.N])
-
-            self.ax.set_xlim([candles_data[0][0], candles_data[self.N-1][0]])
-            self.ax.set_ylim([min_lim-0.3, max_lim+0.3])
-
+            self._set_limits(candles_data, i, ind) # Вычисляем лимиты для осей
             self.fig.canvas.draw()
+
+            yield # Возвращаем управление
+
             self.fig.canvas.flush_events()
 
-            self._show_algorithm(*args, **kwargs)
-
-            self.ax.lines = []
+            self._show_algorithm(*args, **kwargs) # Обратная зависимость
+            self.ax.lines = [] # Очищаем оси
             self.ax.patches = []
 
 
-data = get_standartized_data(path=GAZP_PATH_HOUR_2020)
+class TheoryQuickGrowthView(BaseViewCandles):
 
-a =  BaseViewCandles(data)
-a.show()
+    def _show_algorithm(self, *args, **kwargs):
+        pass

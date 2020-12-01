@@ -58,6 +58,9 @@ class TheoryStatistic:
     def _get_statistic(self):
         ''' Подсчитывает дельта статистику
         '''
+        min_len = len(self.statistic['ind_out'])
+        for key, value in self.statistic.items():
+            self.statistic[key] = self.statistic[key][:min_len-1]
         for i in range(len(self.statistic['ind_out'])):
             ind_in = self.statistic['ind_in'][i]
             ind_out = self.statistic['ind_out'][i]
@@ -80,11 +83,6 @@ class TheoryStatistic:
 
             self.statistic['delta_max_min'].append(self.highest[i] - self.lowest[i])
 
-        self.statistic['delta_max'] = self.highest
-        self.statistic['delta_min'] = self.lowest
-        min_len = len(self.statistic['ind_out'])
-        for key, value in self.statistic.items():
-            self.statistic[key] = self.statistic[key][:min_len]
         self._get_additional_statistic()
 
     def _get_meta_statistic(self):
@@ -253,9 +251,10 @@ class TheoryQuickGrowth(TheoryBase):
                 if self.data['<CLOSE>'][ind] <= self.lowest[ind-1]:
                     self.lowest_indexes.append(ind)
 
-    def check(self, *args, **kwargs):
+    def check(self, deals=[], *args, **kwargs):
         ''' Проверка теории
         '''
+        self.deals = deals
         self.ready_to_buy = True
         for ind in range(1, len(self.data['<CLOSE>'])):
 
@@ -265,26 +264,47 @@ class TheoryQuickGrowth(TheoryBase):
             if self.status == self.STATUS['NOTHING']:
                 if ind in self.highest_indexes:
                     self.open_long(ind)
+                    self.deals.append(ind)
                 if ind in self.lowest_indexes:
                     self.open_short(ind)
-
-            elif self.status == self.STATUS['LONG']:
-                if ind in self.lowest_indexes:
-                    self.close_long(ind)
-                    self.open_short(ind)
+                    self.deals.append(ind)
 
             elif self.status == self.STATUS['SHORT']:
                 if ind in self.highest_indexes:
                     self.close_short(ind)
                     self.open_long(ind)
+                    self.deals.append(ind)
 
-        super().check(*args, **kwargs)
+            elif self.status == self.STATUS['LONG']:
+                if ind in self.lowest_indexes:
+                    self.close_long(ind)
+                    self.open_short(ind)
+                    self.deals.append(ind)
+
+            yield
+
+    def full_check(self, *args, **kwargs):
+        func = self.check(*args, **kwargs)
+        while True:
+            try:
+                next(func)
+            except:
+                super().check(*args, **kwargs)
+                break
 
 
 def main():
-    data = get_standartized_data(path=GAZP_PATH_MIN_2020)
-    theory = TheoryQuickGrowth(data, Nmin=30, Nmax=40)
-    theory.check()
+    Nmin = 70
+    Nmax = 70
+
+    # data = get_standartized_data(path=RTS_3YEARS_HOUR)
+    # theory = TheoryQuickGrowth(data, Nmin=Nmin, Nmax=Nmax)
+    # theory.full_check()
+    # theory.print_statistic(view_all_rows=10)
+
+    data = get_standartized_data(path=RTS_3YEARS_HOUR)
+    theory = TheoryQuickGrowth(data, Nmin=Nmin, Nmax=Nmax)
+    theory.full_check()
     theory.print_statistic(view_all_rows=10)
 
 

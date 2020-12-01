@@ -18,7 +18,7 @@ def convert_datetime(data):
             full_date = str(data['<DATE>'][i]) + str(data['<TIME>'][i])
         converted_date = datetime.strptime(full_date, '%Y%m%d%H%M%S')
         indexes.append(converted_date)
-        converted_dates.append(converted_date)
+        converted_dates.append(converted_date.strftime('%H:%M'))
     indexes = dates.date2num(indexes)
     return indexes, converted_dates
 
@@ -28,7 +28,6 @@ def standartize_data(data):
     '''
     DATE, CONVERTED_DATE = convert_datetime(data)
     data = data.assign(CONVDATE=CONVERTED_DATE)
-    # data = data.drop(columns=['<DATE>', '<TIME>', '<PER>', '<VOL>', '<TICKER>'])
     data = data.drop(columns=[ '<PER>', '<VOL>', '<TICKER>'])
     data = data.assign(DATE=DATE)
     return data
