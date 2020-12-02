@@ -1,6 +1,6 @@
 import keyboard
 import time
-from view import BaseViewCandles
+from view import TheoryQuickGrowthView
 from theory import TheoryQuickGrowth
 from services import get_standartized_data
 from settings import *
@@ -14,14 +14,16 @@ def pause_listener():
         yield
 
 def main():
-    data = get_standartized_data(path=GAZP_PATH_MIN_2020)
+    data = get_standartized_data(path=GAZP_PATH_HOUR_2020)
     deals = [] # Общий пулл сделок
     tasks = [] # Пулл задач
+    highest = []
+    lowest = []
 
-    candles_view = BaseViewCandles(data)
-    tasks.append(candles_view.show(deals=deals))
-    theory = TheoryQuickGrowth(data, Nmin=30, Nmax=40)
-    tasks.append(theory.check(deals=deals))
+    candles_view = TheoryQuickGrowthView(data)
+    tasks.append(candles_view.show(deals=deals, highest=highest, lowest=lowest))
+    theory = TheoryQuickGrowth(data, Nmin=10, Nmax=10)
+    tasks.append(theory.check(deals=deals, highest=highest, lowest=lowest))
 
     tasks.append(pause_listener())
 

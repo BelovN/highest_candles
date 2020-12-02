@@ -39,7 +39,12 @@ class TheoryStatistic:
             'count_profit': 0,
             'avr_profit': 0,
             'count_all': 0,
+            'sum_lesion': 0,
+            'sum_profit': 0,
+            'P/L': 0,
             'total': 0,
+            'total_short': 0,
+            'total_long': 0,
             'avr_all': 0,
             'avr_potencial': 0,
             'avr_max_min': 0,
@@ -59,6 +64,7 @@ class TheoryStatistic:
         ''' Подсчитывает дельта статистику
         '''
         min_len = len(self.statistic['ind_out'])
+
         for key, value in self.statistic.items():
             self.statistic[key] = self.statistic[key][:min_len-1]
         for i in range(len(self.statistic['ind_out'])):
@@ -81,6 +87,8 @@ class TheoryStatistic:
                 self.statistic['potencial'].append(min(self.data['<CLOSE>'][ind_in:ind_out]))
                 self.statistic['delta_potencial'].append(self.statistic['point_in'][i] - self.statistic['potencial'][i])
 
+
+
             self.statistic['delta_max_min'].append(self.highest[i] - self.lowest[i])
 
         self._get_additional_statistic()
@@ -92,10 +100,14 @@ class TheoryStatistic:
             self.meta_statistic['avr_max_min'] += self.statistic['delta_max_min'][i]
             if self.statistic['delta_price'][i] < 0:
                 self.meta_statistic['count_lesion'] += 1
-                self.meta_statistic['avr_lesion'] += self.statistic['delta_price'][i]
+                self.meta_statistic['sum_lesion'] += self.statistic['delta_price'][i]
             elif self.statistic['delta_price'][i] > 0:
                 self.meta_statistic['count_profit'] += 1
-                self.meta_statistic['avr_profit'] += self.statistic['delta_price'][i]
+                self.meta_statistic['sum_profit'] += self.statistic['delta_price'][i]
+            if self.statistic['status'] == self.STATUS['LONG']:
+                self.meta_statistic['total_long'] += self.statistic['delta_price'][i]
+            elif self.statistic['status'] == self.STATUS['SHORT']:
+                self.meta_statistic['total_short'] += self.statistic['delta_price'][i]
 
             self.meta_statistic['avr_potencial'] += self.statistic['delta_potencial'][i]
             self.meta_statistic['total'] += self.statistic['delta_price'][i]
@@ -104,10 +116,10 @@ class TheoryStatistic:
             self.meta_statistic['avr_max_min'] = self.meta_statistic['avr_max_min'] / len(self.statistic['delta_max_min'])
 
         if self.meta_statistic['count_lesion'] > 0: # Средний убыток за сделку
-            self.meta_statistic['avr_lesion'] = self.meta_statistic['avr_lesion'] / self.meta_statistic['count_lesion']
+            self.meta_statistic['avr_lesion'] = self.meta_statistic['sum_lesion'] / self.meta_statistic['count_lesion']
 
         if self.meta_statistic['count_profit'] > 0: # Средняя прибыль за сделку
-            self.meta_statistic['avr_profit'] = self.meta_statistic['avr_profit'] / self.meta_statistic['count_profit']
+            self.meta_statistic['avr_profit'] = self.meta_statistic['sum_profit'] / self.meta_statistic['count_profit']
 
         if len(self.statistic['ind_out']) > 0: # Матожидание одной сделки
             self.meta_statistic['avr_all'] = self.meta_statistic['total'] / len(self.statistic['ind_out'])
@@ -116,6 +128,9 @@ class TheoryStatistic:
             self.meta_statistic['avr_potencial'] = self.meta_statistic['avr_potencial'] / len(self.statistic['ind_out'])
 
         self.meta_statistic['count_all'] = len(self.statistic['ind_out']) # Количество сделок
+        self.meta_statistic['P/L'] = math.abs(self.meta_statistic['sum_profit'] / self.meta_statistic['sum_lesion']) # Прибыль на убыток
+
+
 
         self._get_additional_metastatistic()
 
@@ -129,9 +144,6 @@ class TheoryStatistic:
         ''' Вывод в консоль статистики и мета статистики
             view_all_rows - Выводить все строки
         '''
-        # if view_all_rows is not None: # Сколько строк выводить в консоль (все или )
-        #     pd.set_option("display.max_rows", None)
-        # else:
         pd.set_option("display.max_rows", view_all_rows)
 
         statistic = pd.DataFrame.from_dict(self.statistic)
@@ -158,7 +170,6 @@ class TheoryBase(TheoryStatistic):
     ''' Базовый класс Теория для наследования c логикой покупки и продажи
         а также возможностью получения статистики
     '''
-
 
     def __init__(self, _data, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -209,12 +220,6 @@ class TheoryQuickGrowth(TheoryBase):
         self.Nmin = Nmin
         self.Nmax = Nmax
 
-        self.lowest = []
-        self.highest = []
-
-        self.highest_indexes = []
-        self.lowest_indexes = []
-
     def _get_min_values(self, ind):
         ''' Получение минимальных значений в промежутке
         '''
@@ -251,9 +256,16 @@ class TheoryQuickGrowth(TheoryBase):
                 if self.data['<CLOSE>'][ind] <= self.lowest[ind-1]:
                     self.lowest_indexes.append(ind)
 
-    def check(self, deals=[], *args, **kwargs):
+    def check(self, deals=[], highest=[], lowest=[], *args, **kwargs):
         ''' Проверка теории
         '''
+
+        self.lowest = lowest
+        self.highest = highest
+
+        self.highest_indexes = []
+        self.lowest_indexes = []
+
         self.deals = deals
         self.ready_to_buy = True
         for ind in range(1, len(self.data['<CLOSE>'])):
@@ -296,11 +308,6 @@ class TheoryQuickGrowth(TheoryBase):
 def main():
     Nmin = 70
     Nmax = 70
-
-    # data = get_standartized_data(path=RTS_3YEARS_HOUR)
-    # theory = TheoryQuickGrowth(data, Nmin=Nmin, Nmax=Nmax)
-    # theory.full_check()
-    # theory.print_statistic(view_all_rows=10)
 
     data = get_standartized_data(path=RTS_3YEARS_HOUR)
     theory = TheoryQuickGrowth(data, Nmin=Nmin, Nmax=Nmax)

@@ -72,7 +72,7 @@ class BaseViewCandles(SettingsMixinView):
     ''' Базовый класс для динамического отображения графика свечей
     '''
 
-    def __init__(self, data, N=30, **kwargs):
+    def __init__(self, data, N=15, **kwargs):
         ''' Данные должны быть в формате списка кортежей из 5 состовляющих
         '''
         self.data = data
@@ -105,19 +105,20 @@ class BaseViewCandles(SettingsMixinView):
         max_lim = max(self.data['<HIGH>'].iloc[ind:i])
 
         self.ax.set_xlim([candles_data[0][0], candles_data[i-ind-1][0]])
-        self.ax.set_ylim([min_lim-0.3, max_lim+0.3])
+        self.ax.set_ylim([min_lim-2, max_lim+2])
 
     def count_SMA(self):
         ''' Построение скользящей средней
         '''
-        self.SMA = self.data['<CLOSE>'].rolling(20).mean()
+        self.SMA = self.data['<CLOSE>'].rolling(self.N).mean()
 
-    def plot_EMA(self):
+
+    def count_EMA(self):
         ''' Построение экспоненциальной скользящей средней
         '''
-        self.EMA = self.data['<CLOSE>'].ewm(span=20, adjust=False).mean()
+        self.EMA = self.data['<CLOSE>'].ewm(span=self.N, adjust=False).mean()
 
-    def show(self, width=0.3, alpha=0.8, deals=[], *args, **kwargs):
+    def show(self, width=0.3, alpha=0.8, deals=[], highest=[], lowest=[], *args, **kwargs):
         ''' Базовая функция для отображения функции на графике
         '''
         self.ax.xaxis.set_major_formatter(ticker.FuncFormatter(self._date_ticker))
@@ -125,14 +126,19 @@ class BaseViewCandles(SettingsMixinView):
 
         plt.ion()
         plt.show(block=False) # Block = False для динамической отрисовки
-
+        self.count_SMA()
+        self.count_EMA()
         for i in range(1, len(self.data['<CLOSE>'])):
+            self.find = i
+
             if self.ax.has_been_closed: # Если окно было закрыто - выхордим из цикла
                 break
 
             ind = i - self.N # Избавляемся от отрицательных случаев (i < 0)
             if ind < 0:
                 ind = 0
+
+            self.sind = ind
 
             candles_data = self.tuppled_data[ind:i] # Берем последние N свеч
             lines, rectangles = candlestick_ohlc(self.ax, candles_data, width=width,
@@ -141,18 +147,38 @@ class BaseViewCandles(SettingsMixinView):
             self._color_deals(ind, i, lines, rectangles) # Окрашиваем сделки в черный цвет
 
             self._set_limits(candles_data, i, ind) # Вычисляем лимиты для осей
+
+            self._show_algorithm(*args, highest=highest, lowest=lowest, **kwargs) # Обратная зависимость
+
+            plt.plot(range(len(self.data))[self.sind:self.find-1], self.SMA.iloc[self.sind:self.find-1], color='blue')
+            plt.plot(range(len(self.data))[self.sind:self.find-1], self.EMA.iloc[self.sind:self.find-1], color='purple')
+
             self.fig.canvas.draw()
 
             yield # Возвращаем управление
 
             self.fig.canvas.flush_events()
 
-            self._show_algorithm(*args, **kwargs) # Обратная зависимость
             self.ax.lines = [] # Очищаем оси
             self.ax.patches = []
 
 
 class TheoryQuickGrowthView(BaseViewCandles):
 
-    def _show_algorithm(self, *args, **kwargs):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _show_algorithm(self, *args, highest=[], lowest=[], **kwargs):
+
+        if len(lowest) > 0 and len(highest) > 0:
+            sind = self.sind
+            find = self.find
+            if highest is not None:
+                highest = highest[self.sind:self.find]
+
+            if lowest is not None:
+                lowest = lowest[self.sind:self.find]
+
+            indexes = range(self.sind, self.find-1)
+            plt.plot(indexes, highest, color='black')
+            plt.plot(indexes, lowest, color='black')
