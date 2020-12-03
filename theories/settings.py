@@ -22,6 +22,7 @@ RTS_PATH_15MIN_2019 = os.path.join(DATA_DIR, 'RTS_2019_15MIN.csv')
 RTS_PATH_15MIN_2020 = os.path.join(DATA_DIR, 'RTS_2020_15MIN.csv')
 
 RTS_3YEARS_HOUR = os.path.join(DATA_DIR, 'RTS_3YEARS_HOUR.csv')
+RTS_5YEARS_HOUR = os.path.join(DATA_DIR, 'RTS_5YEARS_HOUR.csv')
 RTS_3YEARS_15MIN = os.path.join(DATA_DIR, 'RTS_3YEARS_15MIN.csv')
 
 

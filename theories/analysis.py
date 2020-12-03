@@ -53,15 +53,18 @@ class TheoryQuickGrowthAnalysis:
             for key, value in theory.meta_statistic.items():
                 self.full_meta_statistic[key].append(value)
 
-            self.full_meta_statistic['Nmin'].append(theory.Nmin)
-            self.full_meta_statistic['Nmax'].append(theory.Nmax)
-
-    def write_meta_statistic_to_csv(self, path=os.path.join(OUTPUT_DIR, 'outputfull_hour.csv')):
+    def write_meta_statistic_to_csv(self, path=os.path.join(OUTPUT_DIR, 'full_meta.csv')):
         ''' Пишет имеющуюся статистику в файл
         '''
         df = pd.DataFrame.from_dict(self.full_meta_statistic)
         with open(path, 'w', encoding='utf-8') as file:
             df.to_csv(file, index=False, header=True, sep=';', float_format='%.3f', decimal=',')
+
+    def print_full_meta_statistic(self):
+        df = pd.DataFrame.from_dict(self.full_meta_statistic)
+        with open(path, 'w', encoding='utf-8') as file:
+            df.to_csv(file, index=False, header=True, sep=';', float_format='%.3f', decimal=',')
+
 
     def _get_coordinates(self, data_list=[]):
         ''' Разбиение данных для отображения в 3d графике
@@ -103,6 +106,8 @@ class TheoryQuickGrowthAnalysis:
         self.view_graph_statistic('avr_lesion')
         self.view_graph_statistic('avr_profit')
         self.view_graph_statistic('avr_potencial')
+        self.view_graph_statistic('total_short')
+        self.view_graph_statistic('total_long')
 
     def get_anilysis(self):
         ''' Подсчитывает всю статистику
@@ -112,14 +117,13 @@ class TheoryQuickGrowthAnalysis:
 
 
 def main():
-
-    # for path in paths:
-    data = get_standartized_data(path=RTS_3YEARS_HOUR)
-    analysis = TheoryQuickGrowthAnalysis(min_ind=20, max_ind=70, step=5, data=data)
-
+    data = get_standartized_data(path=RTS_5YEARS_HOUR)
+    analysis = TheoryQuickGrowthAnalysis(min_ind=40, max_ind=100, step=5, data=data)
     analysis.get_anilysis()
     analysis.write_meta_statistic_to_csv()
-    analysis.view_all_graphics()
+    analysis.view_graph_statistic('total_short')
+    analysis.view_graph_statistic('total_long')
+    analysis.view_graph_statistic('P/L')
 
 
 

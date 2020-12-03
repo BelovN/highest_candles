@@ -17,7 +17,7 @@ with open('page.html', 'r', encoding='utf-8') as file:
         data['text'].append(link.text)
         data['value'].append(int(link['value']))
 
-    frame= pd.DataFrame.from_dict(data)
+    frame = pd.DataFrame.from_dict(data)
     print(frame)
     # print(dropdown_list['value'])
     # print(dropdown_list.get_text())

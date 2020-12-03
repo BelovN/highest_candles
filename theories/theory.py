@@ -51,12 +51,12 @@ class TheoryStatistic:
         }
 
     def _get_additional_statistic(self):
-        ''' Метод подсчета дополнительной статистики для переопределения потомками
+        ''' Метод подсчета дополнительной статистики для переопределения потомком
         '''
         return
 
     def _get_additional_metastatistic(self):
-        ''' Метод подсчета дополнительной метастатистики для переопределения потомками
+        ''' Метод подсчета дополнительной метастатистики для переопределения потомком
         '''
         return
 
@@ -87,8 +87,6 @@ class TheoryStatistic:
                 self.statistic['potencial'].append(min(self.data['<CLOSE>'][ind_in:ind_out]))
                 self.statistic['delta_potencial'].append(self.statistic['point_in'][i] - self.statistic['potencial'][i])
 
-
-
             self.statistic['delta_max_min'].append(self.highest[i] - self.lowest[i])
 
         self._get_additional_statistic()
@@ -96,6 +94,8 @@ class TheoryStatistic:
     def _get_meta_statistic(self):
         ''' Подсчитывает средние и ожидаемые значения
         '''
+        self.meta_statistic['Nmin'] = self.Nmin
+        self.meta_statistic['Nmax'] = self.Nmax
         for i in range(len(self.statistic['ind_out'])):
             self.meta_statistic['avr_max_min'] += self.statistic['delta_max_min'][i]
             if self.statistic['delta_price'][i] < 0:
@@ -104,9 +104,10 @@ class TheoryStatistic:
             elif self.statistic['delta_price'][i] > 0:
                 self.meta_statistic['count_profit'] += 1
                 self.meta_statistic['sum_profit'] += self.statistic['delta_price'][i]
-            if self.statistic['status'] == self.STATUS['LONG']:
+
+            if self.statistic['status'][i] == self.STATUS['LONG']:
                 self.meta_statistic['total_long'] += self.statistic['delta_price'][i]
-            elif self.statistic['status'] == self.STATUS['SHORT']:
+            elif self.statistic['status'][i] == self.STATUS['SHORT']:
                 self.meta_statistic['total_short'] += self.statistic['delta_price'][i]
 
             self.meta_statistic['avr_potencial'] += self.statistic['delta_potencial'][i]
@@ -128,9 +129,7 @@ class TheoryStatistic:
             self.meta_statistic['avr_potencial'] = self.meta_statistic['avr_potencial'] / len(self.statistic['ind_out'])
 
         self.meta_statistic['count_all'] = len(self.statistic['ind_out']) # Количество сделок
-        self.meta_statistic['P/L'] = math.abs(self.meta_statistic['sum_profit'] / self.meta_statistic['sum_lesion']) # Прибыль на убыток
-
-
+        self.meta_statistic['P/L'] = abs(self.meta_statistic['sum_profit'] / self.meta_statistic['sum_lesion']) # Прибыль на убыток
 
         self._get_additional_metastatistic()
 
@@ -140,17 +139,27 @@ class TheoryStatistic:
         self._get_statistic()
         self._get_meta_statistic()
 
+    def write_statistic(self, path=OUTPUT_DIR):
+        df = pd.DataFrame.from_dict(self.statistic)
+        with open(os.path.join(OUTPUT_DIR, 'statistic.csv'), 'w', encoding='utf-8') as file:
+            df.to_csv(file, index=False, header=True, sep=';', float_format='%.3f', decimal=',')
+
+
+    def print_metastatistic(self):
+        for key, value in self.meta_statistic.items(): # Вывод метастатистики
+            print(key, ' = ', value)
+
     def print_statistic(self, view_all_rows=None):
         ''' Вывод в консоль статистики и мета статистики
             view_all_rows - Выводить все строки
         '''
         pd.set_option("display.max_rows", view_all_rows)
-
         statistic = pd.DataFrame.from_dict(self.statistic)
-        # statistic = statistic.drop(columns=['ind_in', 'ind_out'])
         print('\n', statistic, '\n') # Вывод статистики
-        for key, value in self.meta_statistic.items(): # Вывод метастатистики
-            print(key, ' = ', value)
+
+    def print_full_statistic(self, view_all_rows=None):
+        self.print_statistic(view_all_rows=view_all_rows)
+        self.print_metastatistic()
 
     def write_meta_statistic(self, path):
         ''' Пишет статистику в файл
@@ -215,10 +224,28 @@ class TheoryQuickGrowth(TheoryBase):
     ''' Проверка теории покупки при резком скачке и продаже при резком падении
     '''
 
-    def __init__(self, *args, Nmin=10, Nmax=10, **kwargs):
+    def __init__(self, *args, Nmin=10, Nmax=10, deals=None, lowest=None, highest=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.Nmin = Nmin
         self.Nmax = Nmax
+
+        if deals is not None:
+            self.deals = deals
+        else:
+            self.deals = []
+
+        if lowest is not None:
+            self.lowest = lowest
+        else:
+            self.lowest = []
+
+        if highest is not None:
+            self.highest = highest
+        else:
+            self.highest = []
+
+        self.highest_indexes = []
+        self.lowest_indexes = []
 
     def _get_min_values(self, ind):
         ''' Получение минимальных значений в промежутке
@@ -256,18 +283,10 @@ class TheoryQuickGrowth(TheoryBase):
                 if self.data['<CLOSE>'][ind] <= self.lowest[ind-1]:
                     self.lowest_indexes.append(ind)
 
-    def check(self, deals=[], highest=[], lowest=[], *args, **kwargs):
+    def check(self, deals=None, highest=None, lowest=None, *args, **kwargs):
         ''' Проверка теории
         '''
 
-        self.lowest = lowest
-        self.highest = highest
-
-        self.highest_indexes = []
-        self.lowest_indexes = []
-
-        self.deals = deals
-        self.ready_to_buy = True
         for ind in range(1, len(self.data['<CLOSE>'])):
 
             self._get_extremum_values(ind)
@@ -306,13 +325,14 @@ class TheoryQuickGrowth(TheoryBase):
 
 
 def main():
-    Nmin = 70
-    Nmax = 70
-
-    data = get_standartized_data(path=RTS_3YEARS_HOUR)
+    Nmin = 5
+    Nmax = 5
+    data = get_standartized_data(path=RTS_5YEARS_HOUR)
     theory = TheoryQuickGrowth(data, Nmin=Nmin, Nmax=Nmax)
     theory.full_check()
-    theory.print_statistic(view_all_rows=10)
+
+    theory.write_statistic()
+    # theory.print_full_statistic(view_all_rows=10)
 
 
 if __name__ == '__main__':
