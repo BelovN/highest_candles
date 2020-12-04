@@ -17,19 +17,24 @@ mpl.use('Qt5Agg')
 class TheoryQuickGrowthAnalysis:
     ''' Класс для проверки теории c несколькими различными параметрами
     '''
-    def __init__(self, min_ind, max_ind, step, data):
-        self.min_ind = min_ind
-        self.max_ind = max_ind
-        self.step = step
+    def __init__(self, data):
         self.data = data
         self.full_meta_statistic = {}
         self.theories = []
 
+    def set_theories_Nmax_Nmin(self, min_ind, max_ind, step_ind, min_percent, max_percent, step_percent):
         # Создание теорий в диапазоне (min_ind, max_ind)
-        for i in range(min_ind, max_ind + step, step):
-            for j in range(min_ind, max_ind + step, step):
-                theory = TheoryQuickGrowth(self.data, Nmin=i, Nmax=j)
-                self.theories.append(theory)
+        for i in range(min_ind, max_ind + step_ind, step_ind):
+            for j in range(min_ind, max_ind + step_ind, step_ind):
+                for percent in np.arange(min_percent, max_percent + step_percent, step_percent):
+                    theory = TheoryQuickGrowth(self.data, Nmin=i, Nmax=j, percent_from_delta=percent)
+                    self.theories.append(theory)
+
+    def set_theories_percent(self, Nmin, Nmax, min_percent, max_percent, step):
+        # Создание теорий в диапазоне процента (min_percent, max_percent)
+        for percent in np.arange(min_percent, max_percent + step, step):
+            theory = TheoryQuickGrowth(self.data, Nmin=Nmin, Nmax=Nmax, percent_from_delta=percent)
+            self.theories.append(theory)
 
     def _count_all_theories(self):
         ''' Подсчет статистики всех теорий
@@ -65,7 +70,6 @@ class TheoryQuickGrowthAnalysis:
         with open(path, 'w', encoding='utf-8') as file:
             df.to_csv(file, index=False, header=True, sep=';', float_format='%.3f', decimal=',')
 
-
     def _get_coordinates(self, data_list=[]):
         ''' Разбиение данных для отображения в 3d графике
         '''
@@ -78,7 +82,7 @@ class TheoryQuickGrowthAnalysis:
         coordinates = np.asarray(coordinates)
         return coordinates
 
-    def view_graph_statistic(self, stat_arg='total'):
+    def view_graph_statistic3D(self, stat_arg='total'):
         ''' Выводит графики статистики
             stat_arg - Z координата графики
         '''
@@ -99,32 +103,34 @@ class TheoryQuickGrowthAnalysis:
 
         plt.show()
 
-    def view_all_graphics(self):
+    def view_all_graphics3D(self):
         ''' Выводит статистику в виде графиков
         '''
-        self.view_graph_statistic()
-        self.view_graph_statistic('avr_lesion')
-        self.view_graph_statistic('avr_profit')
-        self.view_graph_statistic('avr_potencial')
-        self.view_graph_statistic('total_short')
-        self.view_graph_statistic('total_long')
+        self.view_graph_statistic3D()
+        self.view_graph_statistic3D('avr_lesion')
+        self.view_graph_statistic3D('avr_profit')
+        self.view_graph_statistic3D('avr_potencial')
+        self.view_graph_statistic3D('total_short')
+        self.view_graph_statistic3D('total_long')
 
-    def get_anilysis(self):
+    def get_anilysis_params(self):
         ''' Подсчитывает всю статистику
         '''
         self._count_all_theories()
         self._get_full_meta_statistic()
 
 
-def main():
-    data = get_standartized_data(path=RTS_5YEARS_HOUR)
-    analysis = TheoryQuickGrowthAnalysis(min_ind=40, max_ind=100, step=5, data=data)
-    analysis.get_anilysis()
-    analysis.write_meta_statistic_to_csv()
-    analysis.view_graph_statistic('total_short')
-    analysis.view_graph_statistic('total_long')
-    analysis.view_graph_statistic('P/L')
 
+def main():
+    data = get_standartized_data(path=RTS_3YEARS_HOUR)
+    analysis = TheoryQuickGrowthAnalysis(data=data)
+    # analysis.set_theories_percent(Nmin=30, Nmax=30, min_percent=0.1, max_percent=0.9, step=0.1)
+    analysis.set_theories_Nmax_Nmin(min_ind=65, max_ind=70, step_ind=5,
+                                    min_percent=0.1, max_percent=0.9, step_percent=0.1)
+    # analysis.view_all_graphics3D()
+    analysis.get_anilysis_params()
+    analysis.write_meta_statistic_to_csv()
+    print('DONE!')
 
 
 if __name__ == '__main__':
