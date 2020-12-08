@@ -23,7 +23,8 @@ class TheoryQuickGrowthAnalysis:
         self.theories = []
 
     def set_theories_Nmax_Nmin(self, min_ind, max_ind, step_ind, min_percent, max_percent, step_percent):
-        # Создание теорий в диапазоне (min_ind, max_ind)
+        ''' Создание теорий в диапазоне (min_ind, max_ind)
+        '''
         for i in range(min_ind, max_ind + step_ind, step_ind):
             for j in range(min_ind, max_ind + step_ind, step_ind):
                 for percent in np.arange(min_percent, max_percent + step_percent, step_percent):
@@ -31,7 +32,8 @@ class TheoryQuickGrowthAnalysis:
                     self.theories.append(theory)
 
     def set_theories_percent(self, Nmin, Nmax, min_percent, max_percent, step):
-        # Создание теорий в диапазоне процента (min_percent, max_percent)
+        ''' Создание теорий в диапазоне процента (min_percent, max_percent)
+        '''
         for percent in np.arange(min_percent, max_percent + step, step):
             theory = TheoryQuickGrowth(self.data, Nmin=Nmin, Nmax=Nmax, percent_from_delta=percent)
             self.theories.append(theory)
@@ -122,12 +124,10 @@ class TheoryQuickGrowthAnalysis:
 
 
 def main():
-    data = get_standartized_data(path=RTS_3YEARS_HOUR)
+    data = get_standartized_data(path=SPB_PATH_HOUR_2020)
     analysis = TheoryQuickGrowthAnalysis(data=data)
-    # analysis.set_theories_percent(Nmin=30, Nmax=30, min_percent=0.1, max_percent=0.9, step=0.1)
-    analysis.set_theories_Nmax_Nmin(min_ind=65, max_ind=70, step_ind=5,
-                                    min_percent=0.1, max_percent=0.9, step_percent=0.1)
-    # analysis.view_all_graphics3D()
+    analysis.set_theories_Nmax_Nmin(min_ind=25, max_ind=30, step_ind=5,
+                                    min_percent=0.3, max_percent=0.3, step_percent=0.1)
     analysis.get_anilysis_params()
     analysis.write_meta_statistic_to_csv()
     print('DONE!')

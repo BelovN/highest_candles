@@ -43,10 +43,10 @@ def load_csv(path=GAZP_PATH_MIN_2020, sep=';',  encoding='utf-8', count=None):
     return data
 
 
-def get_standartized_data(path=GAZP_PATH_MIN_2020, count=None):
+def get_standartized_data(path=GAZP_PATH_MIN_2020, sep=';', count=None):
     ''' Считывание и обработка данных
     '''
-    data = load_csv(path=path, count=count)
+    data = load_csv(path=path, count=count, sep=sep)
     standartized_data = standartize_data(data)
     return standartized_data
 

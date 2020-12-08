@@ -28,6 +28,8 @@ class BaseSettingsMixin:
                 setattr(self, key, value)
 
     def set_up(self, **kwargs):
+        ''' Настройка
+        '''
         self._set_default_settings()
         if kwargs:
             self._parse_settings(kwargs)
@@ -72,9 +74,12 @@ class BaseViewCandles(SettingsMixinView):
     ''' Базовый класс для динамического отображения графика свечей
     '''
 
-    def __init__(self, data, N=15, **kwargs):
+    def __init__(self, data, N=15, deals=[], highest=[], lowest=[], **kwargs):
         ''' Данные должны быть в формате списка кортежей из 5 состовляющих
         '''
+        self.deals = deals
+        self.highest = highest
+        self.lowest = lowest
         self.data = data
         self.tuppled_data = format_data_to_tuple(self.data)
         self.N = N
@@ -98,6 +103,12 @@ class BaseViewCandles(SettingsMixinView):
             else:
                 self.deals.remove(deal)
 
+        indexes = range(ind, i)
+
+        plt.plot(indexes, self.lowest[ind:i], color='black')
+        plt.plot(indexes, self.highest[ind:i], color='black')
+
+
     def _set_limits(self, candles_data, i, ind):
         ''' Устанавливаем лимиты для осей
         '''
@@ -118,16 +129,13 @@ class BaseViewCandles(SettingsMixinView):
         '''
         self.EMA = self.data['<CLOSE>'].ewm(span=self.N, adjust=False).mean()
 
-    def show(self, width=0.3, alpha=0.8, deals=[], highest=[], lowest=[], *args, **kwargs):
+    def show(self, width=0.3, alpha=0.8, *args, **kwargs):
         ''' Базовая функция для отображения функции на графике
         '''
         self.ax.xaxis.set_major_formatter(ticker.FuncFormatter(self._date_ticker))
-        self.deals = deals
 
         plt.ion()
         plt.show(block=False) # Block = False для динамической отрисовки
-        self.count_SMA()
-        self.count_EMA()
         for i in range(1, len(self.data['<CLOSE>'])):
             self.find = i
 
@@ -148,10 +156,10 @@ class BaseViewCandles(SettingsMixinView):
 
             self._set_limits(candles_data, i, ind) # Вычисляем лимиты для осей
 
-            self._show_algorithm(*args, highest=highest, lowest=lowest, **kwargs) # Обратная зависимость
+            # self._show_algorithm(*args, highest=self.highest, lowest=self.lowest, **kwargs) # Обратная зависимость
 
-            plt.plot(range(len(self.data))[self.sind:self.find-1], self.SMA.iloc[self.sind:self.find-1], color='blue')
-            plt.plot(range(len(self.data))[self.sind:self.find-1], self.EMA.iloc[self.sind:self.find-1], color='purple')
+            # plt.plot(range(len(self.data))[self.sind:self.find-1], self.SMA.iloc[self.sind:self.find-1], color='blue')
+            # plt.plot(range(len(self.data))[self.sind:self.find-1], self.EMA.iloc[self.sind:self.find-1], color='purple')
 
             self.fig.canvas.draw()
 
@@ -169,10 +177,10 @@ class TheoryQuickGrowthView(BaseViewCandles):
         super().__init__(*args, **kwargs)
 
     def _show_algorithm(self, *args, highest=[], lowest=[], **kwargs):
-
         if len(lowest) > 0 and len(highest) > 0:
             sind = self.sind
             find = self.find
+
             if highest is not None:
                 highest = highest[self.sind:self.find]
 
