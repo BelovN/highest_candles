@@ -38,19 +38,50 @@ class TheoryStatistic:
         }
         self.meta_statistic = {
             'count_lesion': 0,
+            'count_lesion_short': 0,
+            'count_lesion_long': 0,
             'avr_lesion': 0,
+            'avr_lesion_short': 0,
+            'avr_lesion_long': 0,
             'count_profit': 0,
+            'count_profit_short': 0,
+            'count_profit_long': 0,
             'avr_profit': 0,
+            'avr_profit_long': 0,
+            'avr_profit_short': 0,
             'count_all': 0,
+            'count_long': 0,
+            'count_short': 0,
             'sum_lesion': 0,
+            'sum_lesion_long': 0,
+            'sum_lesion_short': 0,
             'sum_profit': 0,
+            'sum_profit_long': 0,
+            'sum_profit_short': 0,
             'P/L': 0,
+            'P/L short ': 0,
+            'P/L long ': 0,
             'total': 0,
             'total_short': 0,
             'total_long': 0,
             'avr_all': 0,
             'avr_potencial': 0,
             'avr_max_min': 0,
+            'start_capital': 0,
+            'filename': '',
+            'date_start': '',
+            'date_finish': '',
+            'count_bars': '',
+            'count_bars_long': '',
+            'count_bars_short': '',
+            'count_profit_row': 1,
+            'count_profit_row_short': 1,
+            'count_profit_row_long': 1,
+            'count_lesion_row': 1,
+            'count_lesion_row_short': 1,
+            'count_lesion_row_long': 1,
+            'worst_day': None,
+            'worst_lesion': 0,
         }
 
     def _get_additional_statistic(self):
@@ -98,14 +129,44 @@ class TheoryStatistic:
         self.meta_statistic['Nmin'] = self.Nmin
         self.meta_statistic['Nmax'] = self.Nmax
         self.meta_statistic['percent'] = self.percent_from_delta
+        all_bars = 0
+        all_bars_long = 0
+        all_bars_short = 0
         for i in range(len(self.statistic['ind_out'])):
             self.meta_statistic['avr_max_min'] += self.statistic['delta_max_min'][i] # Средняя разщница между max и min
+            all_bars += self.statistic['ind_in'][i] - self.statistic['ind_out'][i]
+
+            if self.status == self.STATUS['LONG']:
+                self.meta_statistic['count_long'] += 1
+                all_bars_long += self.statistic['ind_in'][i] - self.statistic['ind_out'][i]
+            elif self.status == self.STATUS['SHORT']:
+                self.meta_statistic['count_short'] += 1
+                all_bars_short = self.statistic['ind_in'][i] - self.statistic['ind_out'][i]
+
             if self.statistic['delta_price'][i] < 0:
                 self.meta_statistic['count_lesion'] += 1
                 self.meta_statistic['sum_lesion'] += self.statistic['delta_price'][i]  # Сумма убытка
+
+                if self.meta_statistic['worst_lesion'] > self.statistic['delta_price'][i]:
+                    self.meta_statistic['worst_lesion'] = self.statistic['delta_price'][i]
+                    self.meta_statistic['worst_day'] = self.statistic['time_in'][i]
+
+                if self.status == self.STATUS['SHORT']:
+                    self.meta_statistic['count_lesion_short'] += 1
+                    self.meta_statistic['sum_lesion_short'] += self.statistic['delta_price'][i]
+                elif self.status == self.STATUS['LONG']:
+                    self.meta_statistic['count_lesion_long'] += 1
+                    self.meta_statistic['sum_lesion_long'] += self.statistic['delta_price'][i]
+
             elif self.statistic['delta_price'][i] > 0:
                 self.meta_statistic['count_profit'] += 1
                 self.meta_statistic['sum_profit'] += self.statistic['delta_price'][i] # Сумма прибыли
+                if self.status == self.STATUS['SHORT']:
+                    self.meta_statistic['count_profit_short'] += 1
+                    self.meta_statistic['sum_profit_short'] += self.statistic['delta_price'][i]
+                elif self.status == self.STATUS['LONG']:
+                    self.meta_statistic['count_profit_long'] += 1
+                    self.meta_statistic['sum_profit_long'] += self.statistic['delta_price'][i]
 
             if self.statistic['status'][i] == self.STATUS['LONG']:
                 self.meta_statistic['total_long'] += self.statistic['delta_price'][i] # Общая прибыль с LONG
@@ -121,9 +182,17 @@ class TheoryStatistic:
 
         if self.meta_statistic['count_lesion'] > 0: # Средний убыток за сделку
             self.meta_statistic['avr_lesion'] = self.meta_statistic['sum_lesion'] / self.meta_statistic['count_lesion']
+            if self.meta_statistic['count_lesion_short'] > 0:
+                self.meta_statistic['avr_lesion_short'] = self.meta_statistic['sum_lesion_short'] / self.meta_statistic['count_lesion_short']
+            if self.meta_statistic['count_lesion_long'] > 0:
+                self.meta_statistic['avr_lesion_long'] = self.meta_statistic['sum_lesion_long'] / self.meta_statistic['count_lesion_long']
 
         if self.meta_statistic['count_profit'] > 0: # Средняя прибыль за сделку
             self.meta_statistic['avr_profit'] = self.meta_statistic['sum_profit'] / self.meta_statistic['count_profit']
+            if self.meta_statistic['count_profit_long'] > 0:
+                self.meta_statistic['avr_profit_long'] = self.meta_statistic['sum_profit_long'] / self.meta_statistic['count_profit_long']
+            if self.meta_statistic['count_profit_short'] > 0:
+                self.meta_statistic['avr_profit_short'] = self.meta_statistic['sum_profit_short'] / self.meta_statistic['count_profit_short']
 
         if len(self.statistic['ind_out']) > 0: # Матожидание одной сделки
             self.meta_statistic['avr_all'] = self.meta_statistic['total'] / len(self.statistic['ind_out'])
@@ -134,6 +203,10 @@ class TheoryStatistic:
         self.meta_statistic['count_all'] = len(self.statistic['ind_out']) # Количество сделок
         if self.meta_statistic['sum_lesion'] != 0:
             self.meta_statistic['P/L'] = abs(self.meta_statistic['sum_profit'] / self.meta_statistic['sum_lesion']) # Прибыль на убыток
+            if self.meta_statistic['sum_lesion_short'] > 0:
+                self.meta_statistic['P/L short'] = abs(self.meta_statistic['sum_profit_short'] / self.meta_statistic['sum_lesion_short'])
+            if self.meta_statistic['sum_lesion_long']:
+                self.meta_statistic['P/L long'] = abs(self.meta_statistic['sum_profit_long'] / self.meta_statistic['sum_lesion_long'])
 
         self._get_additional_metastatistic()
 
@@ -258,13 +331,19 @@ class TheoryQuickGrowth(TheoryBase):
     '''
 
     def __init__(self, *args, Nmin=10, Nmax=10, deals=None, lowest=None, highest=None,
-                 capital=100000, percent_from_delta=0.5, **kwargs):
+                 capital=100000, percent_from_delta=0.5, filename='', date_start=None, date_finish=None, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.Nmin = Nmin
         self.Nmax = Nmax
 
         self.capital = capital
+
+        self.meta_statistic['start_capital'] = capital
+        self.meta_statistic['filename'] = filename
+        self.meta_statistic['date_start'] = date_start
+        self.meta_statistic['date_finish'] = date_finish
+
         self.stop_loss = abs(self.data['<OPEN>'][0] - self.data['<CLOSE>'][0]) / 2 + \
                                     min(self.data['<OPEN>'][0], self.data['<CLOSE>'][0])
         if deals is not None:
@@ -355,12 +434,15 @@ class TheoryQuickGrowth(TheoryBase):
                 self.stop_loss = new_stop_loss
 
     def get_count_for_point_in(self, ind):
-        delta = abs(self.data['<CLOSE>'][ind] - self.stop_loss)
-        one_percent = 2 * self.capital / 100
-        count = int(one_percent / delta)
-        while self.capital <= self.data['<CLOSE>'][ind] * count:
-            count = count - 1
-        return count
+        try:
+            delta = abs(self.data['<CLOSE>'][ind] - self.stop_loss)
+            risk_percent = 2 * self.capital / 100
+            count = int(risk_percent / delta)
+            while self.capital <= self.data['<CLOSE>'][ind] * count:
+                count = count - 1
+            return count
+        except:
+            import pdb; pdb.set_trace()
 
     def reset_stop_loss(self, ind, status):
         ''' Изменить стоп-лосс, при условии изменении max и min
@@ -435,10 +517,10 @@ class TheoryQuickGrowth(TheoryBase):
                 break
 
 def main():
-    data_list = [SPB_PATH_HOUR_2020]
+    data_list = [RTS_PATH_2019_15MIN]
     for path_data in data_list:
         data = get_standartized_data(path=path_data, sep=';')
-        theory = TheoryQuickGrowth(data, Nmin=25, Nmax=30, percent_from_delta=0.2)
+        theory = TheoryQuickGrowth(data, capital=1000000, Nmin=70, Nmax=70, percent_from_delta=0.3)
         theory.full_check()
         theory.write_statistic()
         theory.print_metastatistic()

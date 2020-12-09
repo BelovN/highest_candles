@@ -28,7 +28,7 @@ class TheoryQuickGrowthAnalysis:
         for i in range(min_ind, max_ind + step_ind, step_ind):
             for j in range(min_ind, max_ind + step_ind, step_ind):
                 for percent in np.arange(min_percent, max_percent + step_percent, step_percent):
-                    theory = TheoryQuickGrowth(self.data, Nmin=i, Nmax=j, percent_from_delta=percent)
+                    theory = TheoryQuickGrowth(self.data, Nmin=i, Nmax=j, percent_from_delta=percent, capital=1000000)
                     self.theories.append(theory)
 
     def set_theories_percent(self, Nmin, Nmax, min_percent, max_percent, step):
@@ -124,10 +124,10 @@ class TheoryQuickGrowthAnalysis:
 
 
 def main():
-    data = get_standartized_data(path=SPB_PATH_HOUR_2020)
+    data = get_standartized_data(path=RTS_PATH_2019_15MIN)
     analysis = TheoryQuickGrowthAnalysis(data=data)
-    analysis.set_theories_Nmax_Nmin(min_ind=25, max_ind=30, step_ind=5,
-                                    min_percent=0.3, max_percent=0.3, step_percent=0.1)
+    analysis.set_theories_Nmax_Nmin(min_ind=40, max_ind=60, step_ind=5,
+                                    min_percent=0.1, max_percent=0.7, step_percent=0.1)
     analysis.get_anilysis_params()
     analysis.write_meta_statistic_to_csv()
     print('DONE!')

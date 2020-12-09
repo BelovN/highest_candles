@@ -5,7 +5,7 @@ from settings import *
 
 
 def main():
-    data = get_standartized_data(path=RTS_3YEARS_HOUR, sep=';')
+    data = get_standartized_data(path=RTS_PATH_2019_15MIN, sep=';')
     tasks = [] # Пулл задач
 
     deals = [] # Общий пулл сделок
