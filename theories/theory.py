@@ -35,6 +35,8 @@ class TheoryStatistic:
             'delta_time': [],
             'delta_max_min': [],
             'status': [],
+            'stop_loss': [],
+            'capital_story': [],
         }
         self.meta_statistic = {
             'count_lesion': 0,
@@ -59,8 +61,8 @@ class TheoryStatistic:
             'sum_profit_long': 0,
             'sum_profit_short': 0,
             'P/L': 0,
-            'P/L short ': 0,
-            'P/L long ': 0,
+            '(P/L)_short': 0,
+            '(P/L)_long': 0,
             'total': 0,
             'total_short': 0,
             'total_long': 0,
@@ -82,6 +84,7 @@ class TheoryStatistic:
             'count_lesion_row_long': 1,
             'worst_day': None,
             'worst_lesion': 0,
+            'fixed_percent': 0.1,
         }
 
     def _get_additional_statistic(self):
@@ -126,22 +129,49 @@ class TheoryStatistic:
     def _get_meta_statistic(self):
         ''' Подсчитывает средние и ожидаемые значения
         '''
+        period = str(self.data['<PER>'].loc[0]) + ' MIN'
+        filename = str(self.data['<TICKER>'].loc[0]) + ' ' + period
+        self.meta_statistic['filename'] = filename
+        self.meta_statistic['date_start'] = self.statistic['time_in'][0]
+        self.meta_statistic['date_finish'] = self.statistic['time_out'][-1]
         self.meta_statistic['Nmin'] = self.Nmin
         self.meta_statistic['Nmax'] = self.Nmax
         self.meta_statistic['percent'] = self.percent_from_delta
+        self.meta_statistic['fixed_percent'] = self.fixed_percent
+
+        max_row_lesion = 1
+        row_lesion_counter = 0
+
+        max_row_lesion_long = 1
+        row_lesion_long_counter = 0
+
+        max_row_lesion_short = 1
+        row_lesion_short_counter = 0
+
+        max_row_profit = 1
+        row_profit_counter = 0
+
+        max_row_profit_long = 1
+        row_profit_long_counter = 0
+
+        max_row_profit_short = 1
+        row_profit_short_counter = 0
+
         all_bars = 0
         all_bars_long = 0
         all_bars_short = 0
+
         for i in range(len(self.statistic['ind_out'])):
             self.meta_statistic['avr_max_min'] += self.statistic['delta_max_min'][i] # Средняя разщница между max и min
-            all_bars += self.statistic['ind_in'][i] - self.statistic['ind_out'][i]
+            all_bars += self.statistic['ind_out'][i] - self.statistic['ind_in'][i]
 
-            if self.status == self.STATUS['LONG']:
+            if self.statistic['status'][i] == self.STATUS['LONG']:
                 self.meta_statistic['count_long'] += 1
-                all_bars_long += self.statistic['ind_in'][i] - self.statistic['ind_out'][i]
-            elif self.status == self.STATUS['SHORT']:
+                all_bars_long += self.statistic['ind_out'][i] - self.statistic['ind_in'][i]
+
+            elif self.statistic['status'][i] == self.STATUS['SHORT']:
                 self.meta_statistic['count_short'] += 1
-                all_bars_short = self.statistic['ind_in'][i] - self.statistic['ind_out'][i]
+                all_bars_short += self.statistic['ind_out'][i] - self.statistic['ind_in'][i]
 
             if self.statistic['delta_price'][i] < 0:
                 self.meta_statistic['count_lesion'] += 1
@@ -151,22 +181,65 @@ class TheoryStatistic:
                     self.meta_statistic['worst_lesion'] = self.statistic['delta_price'][i]
                     self.meta_statistic['worst_day'] = self.statistic['time_in'][i]
 
-                if self.status == self.STATUS['SHORT']:
+                row_lesion_counter += 1
+                if self.statistic['status'][i] == self.STATUS['SHORT']:
                     self.meta_statistic['count_lesion_short'] += 1
                     self.meta_statistic['sum_lesion_short'] += self.statistic['delta_price'][i]
-                elif self.status == self.STATUS['LONG']:
+                    row_lesion_short_counter += 1
+                    if row_lesion_long_counter > max_row_lesion_long:
+                        max_row_lesion_long = row_lesion_long_counter
+                    row_lesion_long_counter = 0
+                elif self.statistic['status'][i] == self.STATUS['LONG']:
                     self.meta_statistic['count_lesion_long'] += 1
                     self.meta_statistic['sum_lesion_long'] += self.statistic['delta_price'][i]
+                    row_lesion_long_counter += 1
+                    if row_lesion_short_counter > max_row_lesion_short:
+                        max_row_lesion_short = row_lesion_short_counter
+                    row_lesion_short_counter = 0
 
-            elif self.statistic['delta_price'][i] > 0:
+                if row_profit_counter > max_row_profit:
+                    max_row_profit = row_profit_counter
+                row_profit_counter = 0
+
+                if row_profit_long_counter > max_row_profit_long:
+                    max_row_profit_long = row_profit_long_counter
+                row_profit_long_counter = 0
+
+                if row_profit_short_counter > max_row_profit_short:
+                    max_row_profit_short = row_profit_short_counter
+                row_profit_short_counter = 0
+
+            elif self.statistic['delta_price'][i] > 1:
                 self.meta_statistic['count_profit'] += 1
                 self.meta_statistic['sum_profit'] += self.statistic['delta_price'][i] # Сумма прибыли
-                if self.status == self.STATUS['SHORT']:
+
+                row_profit_counter += 1
+                if self.statistic['status'][i] == self.STATUS['SHORT']:
                     self.meta_statistic['count_profit_short'] += 1
                     self.meta_statistic['sum_profit_short'] += self.statistic['delta_price'][i]
-                elif self.status == self.STATUS['LONG']:
+                    row_profit_short_counter += 1
+                    if row_profit_long_counter > max_row_profit_long:
+                        max_row_profit_long = row_profit_long_counter
+                    row_profit_long_counter = 0
+                elif self.statistic['status'][i] == self.STATUS['LONG']:
                     self.meta_statistic['count_profit_long'] += 1
                     self.meta_statistic['sum_profit_long'] += self.statistic['delta_price'][i]
+                    row_profit_long_counter += 1
+                    if row_profit_short_counter > max_row_profit_short:
+                        max_row_profit_short = row_profit_short_counter
+                    row_profit_short_counter = 0
+
+                if row_lesion_counter > max_row_lesion:
+                    max_row_lesion = row_lesion_counter
+                row_lesion_counter = 0
+
+                if row_lesion_long_counter > max_row_lesion_long:
+                    max_row_lesion_long = row_lesion_long_counter
+                row_lesion_long_counter = 0
+
+                if row_lesion_short_counter > max_row_lesion_short:
+                    max_row_lesion_short = row_lesion_short_counter
+                row_lesion_short_counter = 0
 
             if self.statistic['status'][i] == self.STATUS['LONG']:
                 self.meta_statistic['total_long'] += self.statistic['delta_price'][i] # Общая прибыль с LONG
@@ -203,10 +276,21 @@ class TheoryStatistic:
         self.meta_statistic['count_all'] = len(self.statistic['ind_out']) # Количество сделок
         if self.meta_statistic['sum_lesion'] != 0:
             self.meta_statistic['P/L'] = abs(self.meta_statistic['sum_profit'] / self.meta_statistic['sum_lesion']) # Прибыль на убыток
-            if self.meta_statistic['sum_lesion_short'] > 0:
-                self.meta_statistic['P/L short'] = abs(self.meta_statistic['sum_profit_short'] / self.meta_statistic['sum_lesion_short'])
+            if self.meta_statistic['sum_lesion_short']:
+                self.meta_statistic['(P/L)_short'] = abs(self.meta_statistic['sum_profit_short'] / self.meta_statistic['sum_lesion_short'])
             if self.meta_statistic['sum_lesion_long']:
-                self.meta_statistic['P/L long'] = abs(self.meta_statistic['sum_profit_long'] / self.meta_statistic['sum_lesion_long'])
+                self.meta_statistic['(P/L)_long'] = abs(self.meta_statistic['sum_profit_long'] / self.meta_statistic['sum_lesion_long'])
+
+        self.meta_statistic['count_bars'] = all_bars / len(self.statistic['ind_out'])
+        self.meta_statistic['count_bars_long'] = all_bars_long / len(self.statistic['ind_out'])
+        self.meta_statistic['count_bars_short'] = all_bars_short / len(self.statistic['ind_out'])
+
+        self.meta_statistic['count_lesion_row'] = max_row_lesion
+        self.meta_statistic['count_lesion_row_long'] = max_row_lesion_long
+        self.meta_statistic['count_lesion_row_short'] = max_row_lesion_short
+        self.meta_statistic['count_profit_row'] = max_row_profit
+        self.meta_statistic['count_profit_row_long'] = max_row_profit_long
+        self.meta_statistic['count_profit_row_short'] = max_row_profit_short
 
         self._get_additional_metastatistic()
 
@@ -272,11 +356,13 @@ class TheoryBase(TheoryStatistic):
     def open_long(self, ind):
         ''' Открытие long
         '''
+
         self.status = self.STATUS['LONG']
         self.statistic['ind_in'].append(ind)
         self.deals.append(ind)
         self.statistic['point_in'].append(self.data['<CLOSE>'][ind])
-        self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
+        self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m.%Y %H:%M'))
+        self.statistic['capital_story'].append(self.capital)
 
         count_in = self.get_count_for_point_in(ind)
         self.capital -= self.data['<CLOSE>'][ind] * count_in
@@ -290,8 +376,9 @@ class TheoryBase(TheoryStatistic):
         self.statistic['ind_out'].append(ind)
         self.deals.append(ind)
         self.statistic['point_out'].append(self.data['<CLOSE>'][ind])
-        self.statistic['time_out'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
+        self.statistic['time_out'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m.%Y %H:%M'))
         self.statistic['status'].append(self.STATUS['LONG'])
+        self.statistic['stop_loss'].append(self.stop_loss)
 
         self.capital += self.count_contracts * self.data['<CLOSE>'][ind]
         self.count_contracts = 0
@@ -304,7 +391,8 @@ class TheoryBase(TheoryStatistic):
         self.statistic['ind_in'].append(ind)
         self.deals.append(ind)
         self.statistic['point_in'].append(self.data['<CLOSE>'][ind])
-        self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
+        self.statistic['time_in'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m.%Y %H:%M'))
+        self.statistic['capital_story'].append(self.capital)
 
         count_in = self.get_count_for_point_in(ind)
         self.capital = self.capital + self.data['<CLOSE>'][ind] * count_in
@@ -318,9 +406,9 @@ class TheoryBase(TheoryStatistic):
         self.statistic['ind_out'].append(ind)
         self.deals.append(ind)
         self.statistic['point_out'].append(self.data['<CLOSE>'][ind])
-        self.statistic['time_out'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m %H:%M'))
+        self.statistic['time_out'].append(dates.num2date(self.data['DATE'][ind]).strftime('%d.%m.%Y %H:%M'))
         self.statistic['status'].append(self.STATUS['SHORT'])
-
+        self.statistic['stop_loss'].append(self.stop_loss)
         self.capital -= abs(self.count_contracts) * self.data['<CLOSE>'][ind]
         self.count_contracts = 0
         self.statistic['capital'].append(self.capital)
@@ -364,6 +452,7 @@ class TheoryQuickGrowth(TheoryBase):
         self.highest_indexes = []
         self.lowest_indexes = []
         self.percent_from_delta = percent_from_delta
+        self.fixed_percent = 0.1
 
     def _get_min_values(self, ind):
         ''' Получение минимальных значений в промежутке
@@ -516,12 +605,20 @@ class TheoryQuickGrowth(TheoryBase):
                 super().check(*args, **kwargs)
                 break
 
+
+from excel import write_full_statistic_to_excel
+
+
+
+
 def main():
-    data_list = [RTS_PATH_2019_15MIN]
+    data_list = [RTS_3YEARS_HOUR]
+
     for path_data in data_list:
         data = get_standartized_data(path=path_data, sep=';')
         theory = TheoryQuickGrowth(data, capital=1000000, Nmin=70, Nmax=70, percent_from_delta=0.3)
         theory.full_check()
+        write_full_statistic_to_excel(theory.statistic, theory.meta_statistic)
         theory.write_statistic()
         theory.print_metastatistic()
 

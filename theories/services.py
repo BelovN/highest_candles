@@ -28,7 +28,6 @@ def standartize_data(data):
     '''
     DATE, CONVERTED_DATE = convert_datetime(data)
     data = data.assign(CONVDATE=CONVERTED_DATE)
-    data = data.drop(columns=[ '<PER>', '<VOL>', '<TICKER>'])
     data = data.assign(DATE=DATE)
     return data
 
